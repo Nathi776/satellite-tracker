@@ -18,8 +18,8 @@ def get_all_positions():
     iss_geo = iss.at(t).subpoint()
     satellites.append({
         "name": "ISS",
-        "latitude_deg": iss_geo.latitude.degrees,
-        "longitude_deg": iss_geo.longitude.degrees,
+        "lat": iss_geo.latitude.degrees,
+        "lon": iss_geo.longitude.degrees,
         "alt_km": iss_geo.elevation.km
     })
 
@@ -31,8 +31,8 @@ def get_all_positions():
         satellites.append({
             "name": name,
             "country": data["country"],
-            "latitude_deg": geo.latitude.degrees,
-            "longitude_deg": geo.longitude.degrees,
+            "lat": geo.latitude.degrees,
+            "lon": geo.longitude.degrees,
             "alt_km": geo.elevation.km
         })
 
