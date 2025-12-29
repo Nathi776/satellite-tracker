@@ -3,9 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 #from backend.satellites import get_iss_position
 from backend.passes import predict_passes
 from backend.passes_african import predict_african_passes
-from backend.positions import get_all_positions
+from backend.positions import get_all_positions, ISS_TLE
 
 from backend.services.groundtrack import get_ground_track
+from backend.services.tle_service import get_tles
+from backend.services.orbit_service import get_satellite_position
 from backend.satellites.african import AFRICAN_SATELLITES
 
 
@@ -26,10 +28,13 @@ def root():
 
 @app.get("/groundtrack/{satellite_name}")
 def ground_track(satellite_name: str):
-    if satellite_name not in AFRICAN_SATELLITES:
+    # Support ISS plus the listed African satellites
+    if satellite_name == "ISS":
+        tle = ISS_TLE
+    elif satellite_name in AFRICAN_SATELLITES:
+        tle = AFRICAN_SATELLITES[satellite_name]["tle"]
+    else:
         return {"error": "Satellite not found"}
-
-    tle = AFRICAN_SATELLITES[satellite_name]["tle"]
 
     track = get_ground_track(tle)
 
@@ -57,8 +62,19 @@ def iss_position():
     return get_iss_position()
 
 @app.get("/positions")
-def positions():
-    return get_all_positions()
+def get_positions():
+    tles = get_tles()
+    results = []
+
+    for name, tle in list(tles.items())[:20]:  # limit for performance
+        pos = get_satellite_position(tle)
+        if pos:
+            results.append({
+                "name": name,
+                **pos
+            })
+
+    return results
 
 @app.get("/satellite/{name}")
 def get_satellite(name: str):
