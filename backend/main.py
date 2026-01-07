@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 #from backend.satellites import get_iss_position
 from backend.passes import predict_passes
@@ -9,7 +9,8 @@ from backend.services.groundtrack import get_ground_track
 from backend.services.tle_service import get_tles
 from backend.services.orbit_service import get_satellite_position
 from backend.satellites.african import AFRICAN_SATELLITES
-
+from backend.services.visibility import compute_visibility
+from backend.services.satellites import build_satellites 
 
 app = FastAPI(title='African Satellite Tracker')
 
@@ -28,20 +29,27 @@ def root():
 
 @app.get("/groundtrack/{satellite_name}")
 def ground_track(satellite_name: str):
-    # Support ISS plus the listed African satellites
-    if satellite_name == "ISS":
-        tle = ISS_TLE
-    elif satellite_name in AFRICAN_SATELLITES:
-        tle = AFRICAN_SATELLITES[satellite_name]["tle"]
-    else:
+    tles = get_tles()
+
+    # Try to find matching satellite (partial match)
+    match = None
+    for name, tle in tles.items():
+        if satellite_name.lower() in name.lower():
+            match = tle
+            break
+
+    if not match:
         return {"error": "Satellite not found"}
 
-    track = get_ground_track(tle)
+    track = get_ground_track(
+        [match["line1"], match["line2"]]
+    )
 
     return {
-        "satellite": satellite_name,
+        "satellite": match["name"],
         "track": track
     }
+
 
 
 @app.get("/passes/african/{satellite_name}")
@@ -61,12 +69,19 @@ def iss_passes():
 def iss_position():
     return get_iss_position()
 
+
 @app.get("/positions")
-def get_positions():
+def get_positions(search: str = Query(None)):
     tles = get_tles()
     results = []
 
-    for name, tle in list(tles.items())[:20]:  # limit for performance
+    print(f"Loaded {len(tles)} satellites")
+
+    for name, tle in tles.items():
+        # 🔍 FILTER
+        if search and search.lower() not in name.lower():
+            continue
+
         pos = get_satellite_position(tle)
         if pos:
             results.append({
@@ -74,7 +89,13 @@ def get_positions():
                 **pos
             })
 
+        # limit results for performance
+        if len(results) >= 100:
+            break
+
+    print(f"Returning {len(results)} satellites")
     return results
+
 
 @app.get("/satellite/{name}")
 def get_satellite(name: str):
@@ -87,4 +108,15 @@ def get_satellite(name: str):
     return {
         "name": tle["name"],
         "position": position
+    }
+
+@app.get("/observer/visibility")
+def observer_visibility(lat: float, lon: float):
+    tles = get_tles()
+    visible, passes = compute_visibility(tles, lat, lon)
+
+    return {
+        "observer": {"lat": lat, "lon": lon},
+        "visible_now": visible,
+        "next_passes": passes
     }
