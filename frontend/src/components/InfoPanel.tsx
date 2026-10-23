@@ -1,4 +1,6 @@
-export default function InfoPanel({ satellite }: any) {
+import type { SatellitePos } from "../api";
+
+export default function InfoPanel({ satellite }: { satellite: SatellitePos | null }) {
   if (!satellite) return null;
 
   return (

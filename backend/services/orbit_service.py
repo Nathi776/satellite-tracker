@@ -1,49 +1,55 @@
-from sgp4.api import Satrec, jday
-from datetime import datetime
+"""Current position and basic orbital facts for one satellite."""
 import math
 
-EARTH_RADIUS_KM = 6371.0
+import numpy as np
+from skyfield.api import EarthSatellite
 
-def get_satellite_position(tle):
-    sat = Satrec.twoline2rv(tle["line1"], tle["line2"])
+from backend.services.satellites import ts
 
-    now = datetime.utcnow()
-    jd, fr = jday(
-        now.year, now.month, now.day,
-        now.hour, now.minute, now.second
-    )
 
-    e, r, v = sat.sgp4(jd, fr)
+def get_satellite_position(sat: EarthSatellite, t=None):
+    """Sub-satellite point, altitude, speed and period at time `t` (default: now).
 
-    if e != 0:
-        print(f"SGP4 error {e} for {tle.get('name')}")
+    Latitude/longitude come from Skyfield's subpoint(), which rotates the inertial
+    SGP4 position into the Earth-fixed frame and applies the WGS84 ellipsoid.
+    (Taking atan2 of the raw SGP4 x/y/z gives an *inertial* longitude that drifts
+    away from the real ground position as the Earth rotates.)
+
+    Returns None if SGP4 cannot propagate this satellite (e.g. a decayed object).
+    """
+    if t is None:
+        t = ts.now()
+
+    try:
+        geocentric = sat.at(t)
+        sub = geocentric.subpoint()
+        lat = float(sub.latitude.degrees)
+        lon = float(sub.longitude.degrees)
+        alt_km = float(sub.elevation.km)
+        speed_kms = float(np.linalg.norm(geocentric.velocity.km_per_s))
+
+        # Where it will be one second later, so a client can animate the marker
+        # between refreshes (degrees per second; longitude wraps at +-180).
+        sub_next = sat.at(ts.tt_jd(t.tt + 1.0 / 86400.0)).subpoint()
+        lat_rate = float(sub_next.latitude.degrees) - lat
+        lon_rate = (float(sub_next.longitude.degrees) - lon + 180.0) % 360.0 - 180.0
+    except Exception:
         return None
 
-    x, y, z = r
-    vx, vy, vz = v
+    # Skyfield returns NaN instead of raising for some SGP4 failures.
+    if any(math.isnan(v) for v in (lat, lon, alt_km, speed_kms, lat_rate, lon_rate)):
+        return None
 
-    # Position → lat/lon
-    lon = math.degrees(math.atan2(y, x))
-    lat = math.degrees(math.atan2(z, math.sqrt(x*x + y*y)))
-
-    # Altitude
-    radius = math.sqrt(x*x + y*y + z*z)
-    altitude_km = radius - EARTH_RADIUS_KM
-
-    # Speed (km/s)
-    speed_kms = math.sqrt(vx*vx + vy*vy + vz*vz)
-
-    # Orbital period (minutes)
-    try:
-        mean_motion = float(tle["line2"][52:63])
-        period_min = 1440 / mean_motion
-    except:
-        period_min = None
+    # no_kozai is the mean motion in radians per minute.
+    no_kozai = getattr(sat.model, "no_kozai", 0.0)
+    period_min = (2 * math.pi / no_kozai) if no_kozai > 0 else None
 
     return {
-        "lat": lat,
-        "lon": lon,
-        "alt_km": altitude_km,
-        "speed_kms": speed_kms,
-        "period_min": period_min
+        "lat": round(lat, 4),
+        "lon": round(lon, 4),
+        "alt_km": round(alt_km, 2),
+        "speed_kms": round(speed_kms, 3),
+        "period_min": round(period_min, 2) if period_min else None,
+        "lat_rate": round(lat_rate, 5),
+        "lon_rate": round(lon_rate, 5),
     }

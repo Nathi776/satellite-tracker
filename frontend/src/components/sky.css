@@ -1,0 +1,235 @@
+.sky-panel {
+  position: absolute;
+  right: 16px;
+  top: 96px;
+  width: 316px;
+  max-height: calc(100vh - 116px);
+  overflow-y: auto;
+  background: rgba(14, 16, 22, 0.94);
+  color: #e8ecf4;
+  border: 1px solid #262b38;
+  border-radius: 12px;
+  padding: 12px 14px 14px;
+  z-index: 1000;
+  box-sizing: border-box;
+  font-size: 13px;
+  backdrop-filter: blur(6px);
+}
+
+.sky-panel h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.sky-panel h4 {
+  margin: 16px 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9aa4bb;
+}
+
+.sky-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sky-panel__collapse {
+  background: none;
+  border: 1px solid #333a4d;
+  color: inherit;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.sky-state {
+  margin: 10px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #171b26;
+  border: 1px solid #262b38;
+  line-height: 1.4;
+}
+
+.sky-state strong {
+  display: block;
+}
+
+.sky-state small {
+  color: #9aa4bb;
+}
+
+.sky-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sky-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: #22c55e;
+}
+
+.sky-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #9aa4bb;
+}
+
+.sky-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background: var(--dot);
+  border: 1px solid var(--dot);
+}
+
+.sky-legend span.hollow::before {
+  background: none;
+}
+
+.sky-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0b0d12;
+  background: var(--badge);
+  white-space: nowrap;
+}
+
+.sky-detail {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #171b26;
+  border: 1px solid #262b38;
+  line-height: 1.5;
+}
+
+.sky-detail__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.sky-detail small {
+  color: #9aa4bb;
+}
+
+.sky-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sky-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #1f2330;
+}
+
+.sky-list li:last-child {
+  border-bottom: none;
+}
+
+.sky-list button {
+  all: unset;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sky-pass {
+  padding: 8px 0;
+  border-bottom: 1px solid #1f2330;
+  line-height: 1.45;
+}
+
+.sky-pass:last-child {
+  border-bottom: none;
+}
+
+.sky-pass__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.sky-pass small {
+  color: #9aa4bb;
+}
+
+.sky-muted {
+  color: #9aa4bb;
+  font-size: 12px;
+}
+
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: var(--live, #22c55e);
+  box-shadow: 0 0 6px var(--live, #22c55e);
+}
+
+.sky-hint {
+  position: absolute;
+  right: 16px;
+  top: 96px;
+  width: 280px;
+  z-index: 1000;
+  background: rgba(14, 16, 22, 0.94);
+  color: #e8ecf4;
+  border: 1px solid #262b38;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Phones: dock the panel to the bottom of the screen instead of floating over the map */
+@media (max-width: 720px) {
+  .sky-panel,
+  .sky-hint {
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: 8px;
+    width: auto;
+    max-height: 56vh;
+  }
+
+  .sky-panel--collapsed {
+    max-height: none;
+  }
+}
