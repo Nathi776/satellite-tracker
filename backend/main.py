@@ -1,122 +1,167 @@
+import logging
+import threading
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-#from backend.satellites import get_iss_position
-from backend.passes import predict_passes
-from backend.passes_african import predict_african_passes
-from backend.positions import get_all_positions, ISS_TLE
+from fastapi.responses import JSONResponse
 
-from backend.services.groundtrack import get_ground_track
-from backend.services.tle_service import get_tles
-from backend.services.orbit_service import get_satellite_position
+from backend import config
 from backend.satellites.african import AFRICAN_SATELLITES
-from backend.services.visibility import compute_visibility
-from backend.services.satellites import build_satellites 
+from backend.services import satellites as catalog
+from backend.services import tle_service
+from backend.services.groundtrack import get_ground_track
+from backend.services.orbit_service import get_satellite_position
+from backend.services.passes import predict_passes, resolve_satellite
+from backend.services.visibility import compute_visibility_cached
 
-app = FastAPI(title='African Satellite Tracker')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+log = logging.getLogger("satellite-tracker")
 
-# Enable CORS for frontend
+
+def _warm_up():
+    """Download TLEs and build the catalog in the background so the first request is fast."""
+    try:
+        catalog.get_satellites()
+    except Exception as exc:
+        log.warning("Startup warm-up failed (will retry on first request): %s", exc)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    threading.Thread(target=_warm_up, daemon=True).start()
+    yield
+
+
+app = FastAPI(title="African Satellite Tracker", lifespan=lifespan)
+
+# "*" together with credentials is rejected by browsers, and this API uses no cookies.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=config.ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET"],
     allow_headers=["*"],
 )
 
-@app.get("/")  
+
+@app.exception_handler(tle_service.TLEUnavailable)
+async def tle_unavailable_handler(request, exc):
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
+def _get_or_404(name: str):
+    sat = resolve_satellite(name)
+    if sat is None:
+        raise HTTPException(status_code=404, detail=f"Satellite '{name}' not found")
+    return sat
+
+
+# ---------------------------------------------------------------------------
+# Status
+# ---------------------------------------------------------------------------
+@app.get("/")
 def root():
     return {"message": "Satellite Tracker API is running."}
 
-@app.get("/groundtrack/{satellite_name}")
-def ground_track(satellite_name: str):
-    tles = get_tles()
 
-    # Try to find matching satellite (partial match)
-    match = None
-    for name, tle in tles.items():
-        if satellite_name.lower() in name.lower():
-            match = tle
-            break
-
-    if not match:
-        return {"error": "Satellite not found"}
-
-    track = get_ground_track(
-        [match["line1"], match["line2"]]
-    )
-
-    return {
-        "satellite": match["name"],
-        "track": track
-    }
+@app.get("/health")
+def health():
+    """Cheap status check. Never triggers a download."""
+    return {"status": "ok", "tle": tle_service.get_tle_status()}
 
 
-
-@app.get("/passes/african/{satellite_name}")
-def african_passes(satellite_name):
-    return predict_african_passes(satellite_name)
-
-@app.get("/passes/iss")
-def iss_passes():
-    passes = predict_passes()
-    return {
-        "city": "Pretoria",
-        "satellite": "ISS",
-        "passes": passes
-    }
-
-@app.get("/iss")
-def iss_position():
-    return get_iss_position()
-
-
+# ---------------------------------------------------------------------------
+# Satellites
+# ---------------------------------------------------------------------------
 @app.get("/positions")
-def get_positions(search: str = Query(None)):
-    tles = get_tles()
+def get_positions(
+    search: str = Query(None, description="Case-insensitive name filter"),
+    limit: int = Query(100, ge=1, le=1000),
+):
+    """Current position of satellites matching `search`.
+
+    With no search, African/priority satellites come first and the rest of the
+    catalog fills the remaining slots, so the default view isn't just whichever
+    satellites happen to be first in the CelesTrak file.
+    """
+    if search and search.strip():
+        sats = catalog.search_satellites(search, limit=limit)
+    else:
+        priority = catalog.match_prefixes(config.PASS_WATCHLIST)
+        seen = {s.name for s in priority}
+        rest = (s for s in catalog.get_satellites().values() if s.name not in seen)
+        sats = (priority + list(rest))[:limit]
+
+    t = catalog.ts.now()
     results = []
-
-    print(f"Loaded {len(tles)} satellites")
-
-    for name, tle in tles.items():
-        # 🔍 FILTER
-        if search and search.lower() not in name.lower():
-            continue
-
-        pos = get_satellite_position(tle)
+    for sat in sats:
+        pos = get_satellite_position(sat, t)
         if pos:
-            results.append({
-                "name": name,
-                **pos
-            })
-
-        # limit results for performance
-        if len(results) >= 100:
-            break
-
-    print(f"Returning {len(results)} satellites")
+            results.append({"name": sat.name, **pos})
     return results
 
 
 @app.get("/satellite/{name}")
 def get_satellite(name: str):
-    tle = get_tle_by_name(name)
+    sat = _get_or_404(name)
+    position = get_satellite_position(sat)
+    if position is None:
+        raise HTTPException(status_code=422, detail=f"Cannot propagate orbit for '{sat.name}'")
+    return {"name": sat.name, "position": position}
 
-    if not tle:
-        raise HTTPException(status_code=404, detail="Satellite not found")
 
-    position = get_satellite_position(tle)
-    return {
-        "name": tle["name"],
-        "position": position
-    }
+@app.get("/iss")
+def iss_position():
+    sat = _get_or_404("ISS")
+    position = get_satellite_position(sat)
+    if position is None:
+        raise HTTPException(status_code=422, detail="Cannot propagate the ISS orbit")
+    return {"name": sat.name, **position}
+
+
+@app.get("/groundtrack/{satellite_name}")
+def ground_track(
+    satellite_name: str,
+    minutes: int = Query(90, ge=1, le=1440),
+    step: float = Query(2, gt=0, le=30),
+):
+    sat = _get_or_404(satellite_name)
+    return {"satellite": sat.name, "track": get_ground_track(sat, minutes=minutes, step=step)}
+
+
+# ---------------------------------------------------------------------------
+# Passes
+# ---------------------------------------------------------------------------
+@app.get("/passes/iss")
+def iss_passes(
+    lat: float = Query(None, ge=-90, le=90),
+    lon: float = Query(None, ge=-180, le=180),
+):
+    return predict_passes("ISS", lat, lon)
+
+
+@app.get("/passes/african/{satellite_name}")
+def african_passes(
+    satellite_name: str,
+    lat: float = Query(None, ge=-90, le=90),
+    lon: float = Query(None, ge=-180, le=180),
+):
+    result = predict_passes(satellite_name, lat, lon)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Satellite '{satellite_name}' not found")
+    result["country"] = AFRICAN_SATELLITES.get(result["satellite"], {}).get("country")
+    return result
+
 
 @app.get("/observer/visibility")
-def observer_visibility(lat: float, lon: float):
-    tles = get_tles()
-    visible, passes = compute_visibility(tles, lat, lon)
-
+def observer_visibility(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+):
+    visible, passes = compute_visibility_cached(lat, lon)
     return {
         "observer": {"lat": lat, "lon": lon},
         "visible_now": visible,
-        "next_passes": passes
+        "next_passes": passes,
     }

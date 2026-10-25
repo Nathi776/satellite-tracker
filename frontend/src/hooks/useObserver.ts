@@ -1,17 +1,23 @@
 import { useState } from "react";
 
 export function useObserver() {
-  const [location, setLocation] = useState<{lat: number; lon: number} | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
 
   function requestLocation() {
+    if (!("geolocation" in navigator)) {
+      alert("Geolocation is not supported by this browser");
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocation({
           lat: pos.coords.latitude,
-          lon: pos.coords.longitude
+          lon: pos.coords.longitude,
         });
       },
-      () => alert("Location permission denied")
+      (err) => alert(`Could not get your location: ${err.message}`),
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
     );
   }
 

@@ -1,5 +1,5 @@
-fastapi
-uvicorn
-skyfield
-sgp4
-requests
+fastapi>=0.110
+uvicorn>=0.29
+skyfield>=1.48
+numpy>=1.26
+requests>=2.31
