@@ -49,6 +49,7 @@ The tests run offline against a TLE fixture, so they don't need internet access.
 | `GET /iss` | The ISS's current position |
 | `GET /groundtrack/{name}?minutes=&step=&at=` | Ground track starting now, or at `at` |
 | `GET /observer/visibility?lat=&lon=&hours=&naked_eye_only=` | Your sky: how dark it is, every satellite above your horizon (elevation, azimuth, range, sunlit?, estimated magnitude, per-second motion rates) and upcoming passes (up to 72 h) classified as `visible`, `faint`, `in_shadow` or `daylight` |
+| `GET /passes/calendar.ics?lat=&lon=&hours=&naked_eye_only=` | Upcoming passes as an iCalendar file, each with a 10-minute alarm. Import it into Google/Apple/Outlook calendar for reminders on any device |
 | `GET /passes/iss?lat=&lon=` | ISS passes over a location |
 | `GET /passes/african/{name}?lat=&lon=` | Passes of a named satellite (defaults to Pretoria) |
 
@@ -93,6 +94,13 @@ magnitudes are approximate: refine them with McCants' `qs.mag` or Heavens-Above 
 | `DARK_SKY_SUN_ALTITUDE_DEG` | `-6` | Sun must be below this for the sky to count as dark |
 | `MAX_TIME_TRAVEL_HOURS` | `48` | How far from now `at=` may reach |
 | `NAKED_EYE_LIMIT_MAG` | `4.5` | Faintest magnitude treated as visible (~5.5 dark site, ~4 in a suburb) |
+
+## Pass alerts
+
+The sky panel has an **Add passes to my calendar** link (the `.ics` above) and a per-pass **Remind me**
+button. The button uses browser notifications, so it only fires while the page stays open; use the
+calendar file for reminders that work when the app is closed. True background push alerts would need
+a server-side subscription store and are not built yet.
 
 ## Roadmap
 

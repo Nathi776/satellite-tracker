@@ -233,3 +233,26 @@
     max-height: none;
   }
 }
+
+.sky-remind,
+.sky-calendar {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid #333a4d;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.sky-remind[aria-pressed="true"] {
+  border-color: #84cc16;
+}
+
+.sky-calendar {
+  margin: 0 0 8px;
+}

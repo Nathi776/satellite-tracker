@@ -5,12 +5,13 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from backend import config
 from backend.satellites.african import AFRICAN_SATELLITES
 from backend.services import satellites as catalog
 from backend.services import tle_service
+from backend.services.ics import passes_to_ics
 from backend.services.groundtrack import get_ground_track
 from backend.services.orbit_service import get_satellite_position
 from backend.services.passes import predict_passes, resolve_satellite
@@ -198,6 +199,23 @@ def african_passes(
         raise HTTPException(status_code=404, detail=f"Satellite '{satellite_name}' not found")
     result["country"] = AFRICAN_SATELLITES.get(result["satellite"], {}).get("country")
     return result
+
+
+@app.get("/passes/calendar.ics")
+def passes_calendar(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    hours: int = Query(PASS_HOURS_AHEAD, ge=1, le=MAX_PASS_HOURS),
+    naked_eye_only: bool = Query(True, description="Only passes visible without optical aid"),
+):
+    """Upcoming passes as an iCalendar file (each event has a 10-minute alarm)."""
+    cached, _age = compute_visibility_cached(lat, lon, hours=hours)
+    passes = [p for p in cached["next_passes"] if not naked_eye_only or p["visibility"] == "visible"]
+    return Response(
+        passes_to_ics(passes, lat, lon),
+        media_type="text/calendar",
+        headers={"Content-Disposition": 'attachment; filename="satellite-passes.ics"'},
+    )
 
 
 @app.get("/observer/visibility")
