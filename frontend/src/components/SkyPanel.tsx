@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { API_URL } from "../config";
 import type { SatPass, VisibilityResponse, VisibleSat } from "../api";
 import SkyRadar from "./SkyRadar";
 import {
@@ -39,6 +40,50 @@ function Badge({ status }: { status: keyof typeof STATUS_STYLE }) {
   );
 }
 
+const REMIND_LEAD_MS = 10 * 60 * 1000;
+
+/** In-tab reminder: only works while this page stays open (the calendar file works anywhere). */
+function RemindButton({ pass, nowMs }: { pass: SatPass; nowMs: number }) {
+  const [on, setOn] = useState(false);
+  const riseMs = new Date(pass.rise_time_utc).getTime();
+  const timer = useRef<number | null>(null);
+  const supported = typeof Notification !== "undefined";
+
+  useEffect(
+    () => () => {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  if (!supported || riseMs <= nowMs) return null;
+
+  const toggle = async () => {
+    if (on) {
+      if (timer.current !== null) window.clearTimeout(timer.current);
+      timer.current = null;
+      setOn(false);
+      return;
+    }
+    const permission = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
+    if (permission !== "granted") return;
+    const wait = Math.max(0, riseMs - REMIND_LEAD_MS - Date.now());
+    timer.current = window.setTimeout(() => {
+      new Notification(`${pass.name} is about to pass`, {
+        body: `Rises in the ${pass.rise_direction} at ${formatClock(pass.rise_time_utc)}, peaks at ${Math.round(pass.max_elevation_deg)}°.`,
+      });
+      setOn(false);
+    }, wait);
+    setOn(true);
+  };
+
+  return (
+    <button type="button" className="sky-remind" onClick={toggle} aria-pressed={on}>
+      {on ? "🔔 Reminder on" : "🔔 Remind me"}
+    </button>
+  );
+}
+
 function PassCard({ pass, nowMs }: { pass: SatPass; nowMs: number }) {
   const seen = pass.visibility === "visible";
   return (
@@ -66,6 +111,7 @@ function PassCard({ pass, nowMs }: { pass: SatPass; nowMs: number }) {
           STATUS_STYLE[pass.visibility].hint
         )}
       </small>
+      <RemindButton pass={pass} nowMs={nowMs} />
     </div>
   );
 }
@@ -220,6 +266,13 @@ export default function SkyPanel({
           )}
 
           <h4>Next passes · 48 h</h4>
+          <a
+            className="sky-calendar"
+            href={`${API_URL}/passes/calendar.ics?lat=${observer.lat}&lon=${observer.lon}&hours=48&naked_eye_only=${nakedEyeOnly}`}
+            download="satellite-passes.ics"
+          >
+            📅 Add {nakedEyeOnly ? "visible" : "all"} passes to my calendar
+          </a>
           {passes.length === 0 ? (
             <div className="sky-muted">
               {nakedEyeOnly
