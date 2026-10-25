@@ -7,6 +7,18 @@ from skyfield.api import EarthSatellite
 from backend.services.satellites import ts
 
 
+EARTH_RADIUS_KM = 6371.0
+
+
+def footprint_radius_km(alt_km: float) -> float:
+    """Ground distance from the sub-satellite point to the horizon, as seen from the
+    satellite: the area on the ground that can see it (at 0 degrees elevation) is a
+    circle of this radius. Spherical Earth, so accurate to a fraction of a percent."""
+    if alt_km <= 0:
+        return 0.0
+    return EARTH_RADIUS_KM * math.acos(EARTH_RADIUS_KM / (EARTH_RADIUS_KM + alt_km))
+
+
 def get_satellite_position(sat: EarthSatellite, t=None):
     """Sub-satellite point, altitude, speed and period at time `t` (default: now).
 
@@ -52,4 +64,5 @@ def get_satellite_position(sat: EarthSatellite, t=None):
         "period_min": round(period_min, 2) if period_min else None,
         "lat_rate": round(lat_rate, 5),
         "lon_rate": round(lon_rate, 5),
+        "footprint_km": round(footprint_radius_km(alt_km)),
     }

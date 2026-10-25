@@ -20,6 +20,6 @@ def offline_tles(monkeypatch, tmp_path, tle_text):
     monkeypatch.setattr(config, "TLE_CACHE_PATH", tmp_path / "tle_cache.json")
     monkeypatch.setattr(tle_service, "_download", lambda: tle_text)
     tle_service.reset_for_tests()
-    catalog._cache.update(version=None, snapshot=({}, []))
+    catalog._cache.update(version=None, snapshot=({}, [], {}))
     yield
     tle_service.reset_for_tests()

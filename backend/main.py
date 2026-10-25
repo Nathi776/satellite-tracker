@@ -1,15 +1,17 @@
 import logging
 import threading
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from backend import config
 from backend.satellites.african import AFRICAN_SATELLITES
 from backend.services import satellites as catalog
 from backend.services import tle_service
+from backend.services.ics import passes_to_ics
 from backend.services.groundtrack import get_ground_track
 from backend.services.orbit_service import get_satellite_position
 from backend.services.passes import predict_passes, resolve_satellite
@@ -61,6 +63,26 @@ def _get_or_404(name: str):
     return sat
 
 
+def _resolve_time(at):
+    """The Skyfield time for an optional ?at= timestamp (default: now).
+
+    A timestamp without a timezone is read as UTC. Times too far from now are
+    refused, because TLEs are only accurate for a few days.
+    """
+    now = datetime.now(timezone.utc)
+    if at is None:
+        return catalog.ts.from_datetime(now)
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=timezone.utc)
+    limit = timedelta(hours=config.MAX_TIME_TRAVEL_HOURS)
+    if abs(at - now) > limit:
+        raise HTTPException(
+            status_code=422,
+            detail=f"'at' must be within {config.MAX_TIME_TRAVEL_HOURS:g} hours of now",
+        )
+    return catalog.ts.from_datetime(at)
+
+
 # ---------------------------------------------------------------------------
 # Status
 # ---------------------------------------------------------------------------
@@ -78,31 +100,50 @@ def health():
 # ---------------------------------------------------------------------------
 # Satellites
 # ---------------------------------------------------------------------------
+@app.get("/groups")
+def get_groups():
+    """Satellite groups (Stations, Africa, Weather ...) with how many satellites each has.
+
+    Groups are worked out from satellite names, so treat them as a convenient
+    filter rather than an authoritative catalogue.
+    """
+    summary = catalog.group_summary()
+    return [{"id": "all", "label": "All", "count": sum(g["count"] for g in summary)}] + summary
+
+
 @app.get("/positions")
 def get_positions(
     search: str = Query(None, description="Case-insensitive name filter"),
-    limit: int = Query(100, ge=1, le=1000),
+    group: str = Query(None, description="Only this group (see /groups); 'all' or empty = every group"),
+    limit: int = Query(100, ge=1, le=2000),
+    at: datetime = Query(None, description="Show positions at this ISO time instead of now"),
 ):
-    """Current position of satellites matching `search`.
+    """Position of satellites matching `search` and/or `group`, now or at time `at`.
 
-    With no search, African/priority satellites come first and the rest of the
+    With no filter, African/priority satellites come first and the rest of the
     catalog fills the remaining slots, so the default view isn't just whichever
     satellites happen to be first in the CelesTrak file.
     """
-    if search and search.strip():
-        sats = catalog.search_satellites(search, limit=limit)
+    t = _resolve_time(at)
+    known_groups = {g["id"] for g in catalog.group_summary()} | {"all"}
+    if group and group not in known_groups:
+        raise HTTPException(status_code=422, detail=f"Unknown group '{group}'")
+
+    has_search = bool(search and search.strip())
+    if has_search or (group and group != "all"):
+        sats = catalog.select(search if has_search else None, group, limit=limit)
     else:
         priority = catalog.match_prefixes(config.PASS_WATCHLIST)
         seen = {s.name for s in priority}
         rest = (s for s in catalog.get_satellites().values() if s.name not in seen)
         sats = (priority + list(rest))[:limit]
 
-    t = catalog.ts.now()
+    group_of = catalog.get_groups()
     results = []
     for sat in sats:
         pos = get_satellite_position(sat, t)
         if pos:
-            results.append({"name": sat.name, **pos})
+            results.append({"name": sat.name, "group": group_of.get(sat.name, "other"), **pos})
     return results
 
 
@@ -129,9 +170,11 @@ def ground_track(
     satellite_name: str,
     minutes: int = Query(90, ge=1, le=1440),
     step: float = Query(2, gt=0, le=30),
+    at: datetime = Query(None, description="Start the track at this ISO time instead of now"),
 ):
     sat = _get_or_404(satellite_name)
-    return {"satellite": sat.name, "track": get_ground_track(sat, minutes=minutes, step=step)}
+    t0 = _resolve_time(at)
+    return {"satellite": sat.name, "track": get_ground_track(sat, minutes=minutes, step=step, t0=t0)}
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +199,23 @@ def african_passes(
         raise HTTPException(status_code=404, detail=f"Satellite '{satellite_name}' not found")
     result["country"] = AFRICAN_SATELLITES.get(result["satellite"], {}).get("country")
     return result
+
+
+@app.get("/passes/calendar.ics")
+def passes_calendar(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    hours: int = Query(PASS_HOURS_AHEAD, ge=1, le=MAX_PASS_HOURS),
+    naked_eye_only: bool = Query(True, description="Only passes visible without optical aid"),
+):
+    """Upcoming passes as an iCalendar file (each event has a 10-minute alarm)."""
+    cached, _age = compute_visibility_cached(lat, lon, hours=hours)
+    passes = [p for p in cached["next_passes"] if not naked_eye_only or p["visibility"] == "visible"]
+    return Response(
+        passes_to_ics(passes, lat, lon),
+        media_type="text/calendar",
+        headers={"Content-Disposition": 'attachment; filename="satellite-passes.ics"'},
+    )
 
 
 @app.get("/observer/visibility")
