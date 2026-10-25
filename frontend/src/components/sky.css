@@ -1,9 +1,9 @@
 .sky-panel {
   position: absolute;
   right: 16px;
-  top: 96px;
+  top: 16px;
   width: 316px;
-  max-height: calc(100vh - 116px);
+  max-height: calc(100% - 32px);
   overflow-y: auto;
   background: rgba(14, 16, 22, 0.94);
   color: #e8ecf4;
@@ -205,7 +205,7 @@
 .sky-hint {
   position: absolute;
   right: 16px;
-  top: 96px;
+  top: 16px;
   width: 280px;
   z-index: 1000;
   background: rgba(14, 16, 22, 0.94);

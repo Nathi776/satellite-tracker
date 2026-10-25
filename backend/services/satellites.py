@@ -9,7 +9,7 @@ import threading
 
 from skyfield.api import EarthSatellite, load
 
-from backend.services import tle_service
+from backend.services import groups, tle_service
 
 log = logging.getLogger(__name__)
 
@@ -17,9 +17,9 @@ log = logging.getLogger(__name__)
 ts = load.timescale()
 
 _lock = threading.Lock()
-# "snapshot" is (satellites, index) and is replaced as a single object, so readers
-# never see a satellites dict and a name index from two different refreshes.
-_cache = {"version": None, "snapshot": ({}, [])}
+# "snapshot" is (satellites, name index, group per name) and is replaced as a single
+# object, so readers never see parts of it from two different refreshes.
+_cache = {"version": None, "snapshot": ({}, [], {})}
 
 
 def _normalize(text: str) -> str:
@@ -46,7 +46,7 @@ def _snapshot():
         if _cache["version"] != version:
             satellites = build_satellites(tles)
             index = [(_normalize(name), name) for name in satellites]
-            _cache["snapshot"] = (satellites, index)
+            _cache["snapshot"] = (satellites, index, groups.classify_all(satellites))
             _cache["version"] = version
             log.info("Built %d EarthSatellite objects", len(satellites))
         return _cache["snapshot"]
@@ -59,7 +59,7 @@ def get_satellites() -> dict:
 
 def search_satellites(query: str, limit=None) -> list:
     """Satellites whose name contains `query` (case, spaces and punctuation ignored)."""
-    satellites, index = _snapshot()
+    satellites, index, _groups = _snapshot()
     q = _normalize(query or "")
     if not q:
         matches = list(satellites.values())
@@ -74,7 +74,7 @@ def match_prefixes(prefixes) -> list:
     Used for watchlists such as "ZACUBE" -> ZACUBE-1, ZACUBE-2. Order follows the
     catalog and each satellite appears once.
     """
-    satellites, index = _snapshot()
+    satellites, index, _groups = _snapshot()
     wanted = [p for p in (_normalize(x) for x in prefixes) if p]
     return [
         satellites[name]
@@ -89,7 +89,7 @@ def find_satellite(query: str):
     Preference: exact name > exact (normalised) name > name starting with the
     query > name containing the query. Ties go to the first in catalog order.
     """
-    satellites, index = _snapshot()
+    satellites, index, _groups = _snapshot()
     if query in satellites:
         return satellites[query]
 
@@ -107,3 +107,27 @@ def find_satellite(query: str):
         if q in norm:
             return satellites[name]
     return None
+
+
+def get_groups() -> dict:
+    """{satellite name: group id} for the current catalog."""
+    return _snapshot()[2]
+
+
+def group_summary() -> list:
+    """[{id, label, count}] for every group, in display order."""
+    return groups.summarize(get_groups())
+
+
+def select(search=None, group=None, limit=None) -> list:
+    """Satellites matching a name search and/or a group. Both filters are applied
+    before the limit, so a limit never hides matches that come later in the catalog."""
+    satellites, index, group_of = _snapshot()
+    q = _normalize(search or "")
+
+    names = (name for norm, name in index if not q or q in norm)
+    if group and group != "all":
+        names = (name for name in names if group_of.get(name) == group)
+
+    chosen = [satellites[name] for name in names]
+    return chosen[:limit] if limit else chosen

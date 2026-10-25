@@ -1,0 +1,276 @@
+/* ---- page layout: header on top, map fills the rest ---- */
+/* Sized from the viewport, not from a parent: App.jsx wraps this in a plain <div>.
+   dvh keeps the bottom of the map above a phone browser's toolbar. */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+}
+
+.app-header {
+  flex: none;
+  background: #121212;
+  color: #fff;
+  padding: 10px 16px 8px;
+  box-sizing: border-box;
+}
+
+.app-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.app-header__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.app-header input[type="search"],
+.app-header select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: none;
+  font: inherit;
+  font-size: 14px;
+}
+
+.app-header input[type="search"] {
+  width: 280px;
+  max-width: 100%;
+}
+
+.btn-primary {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #0077ff;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+}
+
+.header-error {
+  color: #ff8a8a;
+  font-size: 13px;
+}
+
+.map-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.map-area .leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* ---- group filter chips ---- */
+.chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  scrollbar-width: thin;
+}
+
+.chip {
+  --chip: #94a3b8;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #333a4d;
+  background: transparent;
+  color: #e8ecf4;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: var(--chip);
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--chip);
+  background: color-mix(in srgb, var(--chip) 26%, transparent);
+  font-weight: 600;
+}
+
+.chip__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--chip);
+}
+
+.chip small {
+  color: #9aa4bb;
+  font-size: 11px;
+}
+
+.shown-note {
+  color: #9aa4bb;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ---- bottom-left stack: selected satellite + time control ---- */
+.left-stack {
+  position: absolute;
+  left: 12px;
+  bottom: 28px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.left-stack > * {
+  pointer-events: auto;
+}
+
+.info,
+.timebar {
+  background: rgba(14, 16, 22, 0.94);
+  color: #e8ecf4;
+  border: 1px solid #262b38;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  box-sizing: border-box;
+  backdrop-filter: blur(6px);
+}
+
+.info__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.info h3 {
+  margin: 0;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info__close {
+  background: none;
+  border: 1px solid #333a4d;
+  color: inherit;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  flex: none;
+}
+
+.info__group {
+  --chip: #94a3b8;
+  display: inline-block;
+  margin: 6px 0 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--chip) 30%, transparent);
+  border: 1px solid var(--chip);
+}
+
+.info__grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 12px;
+  margin: 8px 0 0;
+}
+
+.info__grid dt {
+  color: #9aa4bb;
+}
+
+.info__grid dd {
+  margin: 0;
+}
+
+.info__grid small {
+  color: #9aa4bb;
+}
+
+.timebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timebar__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.timebar__top strong {
+  flex: 1;
+}
+
+.timebar__live {
+  background: none;
+  border: 1px solid #333a4d;
+  color: inherit;
+  border-radius: 6px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.timebar__live:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.timebar input[type="range"] {
+  width: 100%;
+  accent-color: #0077ff;
+  margin: 4px 0 0;
+}
+
+.timebar__ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #9aa4bb;
+}
+
+/* ---- phones: overlays sit at the top (the sky panel docks to the bottom) ---- */
+@media (max-width: 720px) {
+  .left-stack {
+    top: 8px;
+    bottom: auto;
+    left: 56px;
+    right: 8px;
+    width: auto;
+  }
+
+  .app-header input[type="search"] {
+    width: 100%;
+  }
+}

@@ -10,7 +10,13 @@ export type SatellitePos = {
   /** degrees per second, used to animate the marker between refreshes */
   lat_rate?: number;
   lon_rate?: number;
+  /** satellite group id, see /groups */
+  group?: string;
+  /** radius of the area on the ground that can see this satellite (horizon to horizon) */
+  footprint_km?: number;
 };
+
+export type GroupInfo = { id: string; label: string; count: number };
 
 /** Why a satellite above the horizon can or can't be seen. */
 export type VisibilityStatus = "visible" | "faint" | "in_shadow" | "daylight";
@@ -95,8 +101,25 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export const fetchPositions = (search: string, signal?: AbortSignal) =>
-  getJson<SatellitePos[]>(`/positions?search=${encodeURIComponent(search)}`, signal);
+export const fetchGroups = (signal?: AbortSignal) => getJson<GroupInfo[]>("/groups", signal);
+
+const isoTime = (ms: number) => encodeURIComponent(new Date(ms).toISOString());
+
+export type PositionsQuery = {
+  search?: string;
+  group?: string;
+  limit?: number;
+  /** show positions at this time (ms since epoch) instead of now */
+  at?: number | null;
+};
+
+export const fetchPositions = (q: PositionsQuery, signal?: AbortSignal) => {
+  const params = [`search=${encodeURIComponent(q.search ?? "")}`];
+  if (q.group && q.group !== "all") params.push(`group=${encodeURIComponent(q.group)}`);
+  if (q.limit) params.push(`limit=${q.limit}`);
+  if (q.at) params.push(`at=${isoTime(q.at)}`);
+  return getJson<SatellitePos[]>(`/positions?${params.join("&")}`, signal);
+};
 
 export const fetchVisibility = (
   lat: number,
@@ -109,8 +132,18 @@ export const fetchVisibility = (
     signal,
   );
 
-export const fetchGroundTrack = (name: string, signal?: AbortSignal) =>
-  getJson<{ satellite: string; track: TrackPoint[] }>(
-    `/groundtrack/${encodeURIComponent(name)}`,
+export const fetchGroundTrack = (
+  name: string,
+  opts: { at?: number | null; minutes?: number; step?: number } = {},
+  signal?: AbortSignal,
+) => {
+  const params: string[] = [];
+  if (opts.minutes) params.push(`minutes=${opts.minutes}`);
+  if (opts.step) params.push(`step=${opts.step}`);
+  if (opts.at) params.push(`at=${isoTime(opts.at)}`);
+  const query = params.length ? `?${params.join("&")}` : "";
+  return getJson<{ satellite: string; track: TrackPoint[] }>(
+    `/groundtrack/${encodeURIComponent(name)}${query}`,
     signal,
   );
+};
