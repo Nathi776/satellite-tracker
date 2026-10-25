@@ -52,15 +52,38 @@ def test_visibility_response_shape(client):
     r = client.get("/observer/visibility", params={"lat": -25.7479, "lon": 28.2293})
     assert r.status_code == 200
     body = r.json()
-    assert set(body) == {"observer", "visible_now", "next_passes"}
+    assert set(body) == {"generated_at", "age_seconds", "observer", "visible_now", "next_passes"}
+    assert 0 <= body["age_seconds"] < 5
+    assert body["observer"]["sky"] in {"day", "twilight_civil", "twilight_nautical",
+                                       "twilight_astronomical", "night"}
     for sat in body["visible_now"]:
-        assert {"lat", "lon", "altitude_deg", "azimuth_deg", "distance_km"} <= set(sat)
+        assert {"lat", "lon", "altitude_deg", "azimuth_deg", "distance_km",
+                "sunlit", "naked_eye", "status"} <= set(sat)
         assert sat["altitude_deg"] > 0
     for p in body["next_passes"]:
         assert {"name", "rise_time_utc", "peak_time_utc", "set_time_utc",
-                "max_elevation_deg"} <= set(p)
+                "max_elevation_deg", "visibility", "rise_direction"} <= set(p)
         assert p["rise_time_utc"] < p["peak_time_utc"] < p["set_time_utc"]
         assert p["max_elevation_deg"] >= 10
+
+
+def test_naked_eye_only_filters_satellites_and_passes(client):
+    params = {"lat": -25.7479, "lon": 28.2293, "hours": 72}
+    everything = client.get("/observer/visibility", params=params).json()
+    filtered = client.get("/observer/visibility", params={**params, "naked_eye_only": True}).json()
+
+    assert all(s["naked_eye"] for s in filtered["visible_now"])
+    assert all(p["visibility"] == "visible" for p in filtered["next_passes"])
+    assert len(filtered["visible_now"]) <= len(everything["visible_now"])
+    assert len(filtered["next_passes"]) <= len(everything["next_passes"])
+    assert filtered["observer"] == everything["observer"]
+
+
+def test_visibility_hours_window_is_validated(client):
+    base = {"lat": 0, "lon": 0}
+    assert client.get("/observer/visibility", params={**base, "hours": 0}).status_code == 422
+    assert client.get("/observer/visibility", params={**base, "hours": 73}).status_code == 422
+    assert client.get("/observer/visibility", params={**base, "hours": 72}).status_code == 200
 
 
 @pytest.mark.parametrize("params", [

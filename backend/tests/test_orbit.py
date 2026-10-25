@@ -61,7 +61,7 @@ def test_visible_now_entries_have_everything_the_frontend_needs():
     observer = _observer(pos["lat"], pos["lon"])
     visible = compute_visible_now(sats, observer, t)
     entry = next(v for v in visible if v["name"] == "ISS (ZARYA)")
-    assert set(entry) == {"name", "lat", "lon", "altitude_deg", "azimuth_deg", "distance_km"}
+    assert {"name", "lat", "lon", "altitude_deg", "azimuth_deg", "distance_km"} <= set(entry)
     assert entry["altitude_deg"] > 85
     assert 380 < entry["distance_km"] < 450
     # sorted highest first

@@ -13,7 +13,11 @@ from backend.services import tle_service
 from backend.services.groundtrack import get_ground_track
 from backend.services.orbit_service import get_satellite_position
 from backend.services.passes import predict_passes, resolve_satellite
-from backend.services.visibility import compute_visibility_cached
+from backend.services.visibility import (
+    MAX_PASS_HOURS,
+    PASS_HOURS_AHEAD,
+    compute_visibility_cached,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("satellite-tracker")
@@ -158,10 +162,29 @@ def african_passes(
 def observer_visibility(
     lat: float = Query(..., ge=-90, le=90),
     lon: float = Query(..., ge=-180, le=180),
+    hours: int = Query(PASS_HOURS_AHEAD, ge=1, le=MAX_PASS_HOURS, description="How far ahead to look for passes"),
+    naked_eye_only: bool = Query(
+        False,
+        description="Only satellites (and passes) that can be seen without optical aid: "
+        "dark sky, sunlit and bright enough",
+    ),
 ):
-    visible, passes = compute_visibility_cached(lat, lon)
+    """What the observer can see.
+
+    `visible_now` lists every satellite above the horizon. Each has `status`:
+    visible | faint | in_shadow | daylight, plus `sunlit`, an estimated `magnitude`
+    (only for objects with a known brightness) and per-second `*_rate` fields for
+    smooth client-side animation. `observer` says how dark the sky is.
+    """
+    cached, age = compute_visibility_cached(lat, lon, hours=hours)
+    # age_seconds: how old the computation is (up to VISIBILITY_CACHE_SECONDS). A client
+    # adds it to its own elapsed time when it moves satellites along their rates.
+    result = {**cached, "age_seconds": round(age, 2)}
+    if not naked_eye_only:
+        return result
+
     return {
-        "observer": {"lat": lat, "lon": lon},
-        "visible_now": visible,
-        "next_passes": passes,
+        **result,
+        "visible_now": [s for s in result["visible_now"] if s["naked_eye"]],
+        "next_passes": [p for p in result["next_passes"] if p["visibility"] == "visible"],
     }

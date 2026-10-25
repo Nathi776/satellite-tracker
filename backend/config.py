@@ -27,6 +27,28 @@ DEFAULT_OBSERVER = {
     "elevation_m": 1350.0,
 }
 
+# --- Naked-eye visibility ---------------------------------------------------
+# A satellite can be seen without optical aid when (1) the observer's sky is dark
+# enough, (2) the satellite is in sunlight and (3) it is bright enough.
+#
+# (1) Sun altitude below this many degrees. -6 is the end of civil twilight, when
+#     the brightest satellites become easy to spot.
+DARK_SKY_SUN_ALTITUDE_DEG = float(os.getenv("DARK_SKY_SUN_ALTITUDE_DEG", "-6"))
+# (3) Apparent magnitude at or below this is treated as visible to the naked eye
+#     (lower = brighter; ~5.5 is the limit under a good dark sky, ~4 from a suburb).
+NAKED_EYE_LIMIT_MAG = float(os.getenv("NAKED_EYE_LIMIT_MAG", "4.5"))
+
+# Standard (intrinsic) magnitude: how bright the object would look at 1000 km range,
+# half illuminated. TLEs contain no size or brightness, so apparent magnitude can only
+# be estimated for objects listed here. These are approximate figures; adjust them
+# if you have better data (e.g. McCants' qs.mag file or Heavens-Above values).
+# Objects that are not listed are never reported as naked-eye visible.
+BRIGHT_STD_MAGS = {
+    "ISS (ZARYA)": -1.8,
+    "CSS (TIANHE)": -1.0,
+    "HST": 2.2,
+}
+
 # --- API --------------------------------------------------------------------
 # Comma separated list, e.g. "https://my-app.vercel.app,http://localhost:5173".
 # Defaults to "*" so local development just works; restrict it when you deploy.

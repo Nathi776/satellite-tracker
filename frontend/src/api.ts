@@ -7,7 +7,13 @@ export type SatellitePos = {
   alt_km?: number;
   speed_kms?: number;
   period_min?: number | null;
+  /** degrees per second, used to animate the marker between refreshes */
+  lat_rate?: number;
+  lon_rate?: number;
 };
+
+/** Why a satellite above the horizon can or can't be seen. */
+export type VisibilityStatus = "visible" | "faint" | "in_shadow" | "daylight";
 
 export type VisibleSat = {
   name: string;
@@ -16,6 +22,16 @@ export type VisibleSat = {
   altitude_deg: number;
   azimuth_deg: number;
   distance_km: number;
+  sunlit: boolean;
+  /** estimated apparent magnitude; null when we have no brightness data for this object */
+  magnitude: number | null;
+  naked_eye: boolean;
+  status: VisibilityStatus;
+  /** degrees per second */
+  altitude_rate: number;
+  azimuth_rate: number;
+  lat_rate: number;
+  lon_rate: number;
 };
 
 export type SatPass = {
@@ -26,10 +42,38 @@ export type SatPass = {
   rise_azimuth_deg: number;
   peak_azimuth_deg: number;
   set_azimuth_deg: number;
+  rise_direction: string;
+  peak_direction: string;
+  set_direction: string;
   max_elevation_deg: number;
+  duration_seconds: number;
+  visibility: VisibilityStatus;
+  visible_from_utc: string | null;
+  visible_until_utc: string | null;
+  visible_seconds: number;
+  magnitude: number | null;
+  sun_altitude_deg: number;
+  sunlit_at_peak: boolean;
 };
 
+export type SkyState =
+  | "day"
+  | "twilight_civil"
+  | "twilight_nautical"
+  | "twilight_astronomical"
+  | "night";
+
 export type VisibilityResponse = {
+  generated_at: string;
+  /** how old the computation already was when the server sent it */
+  age_seconds: number;
+  observer: {
+    lat: number;
+    lon: number;
+    sun_altitude_deg: number;
+    sky: SkyState;
+    dark_enough: boolean;
+  };
   visible_now: VisibleSat[];
   next_passes: SatPass[];
 };
@@ -54,8 +98,16 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 export const fetchPositions = (search: string, signal?: AbortSignal) =>
   getJson<SatellitePos[]>(`/positions?search=${encodeURIComponent(search)}`, signal);
 
-export const fetchVisibility = (lat: number, lon: number, signal?: AbortSignal) =>
-  getJson<VisibilityResponse>(`/observer/visibility?lat=${lat}&lon=${lon}`, signal);
+export const fetchVisibility = (
+  lat: number,
+  lon: number,
+  hours = 48,
+  signal?: AbortSignal,
+) =>
+  getJson<VisibilityResponse>(
+    `/observer/visibility?lat=${lat}&lon=${lon}&hours=${hours}`,
+    signal,
+  );
 
 export const fetchGroundTrack = (name: string, signal?: AbortSignal) =>
   getJson<{ satellite: string; track: TrackPoint[] }>(
