@@ -43,16 +43,25 @@ The tests run offline against a TLE fixture, so they don't need internet access.
 | Endpoint | What it returns |
 |---|---|
 | `GET /health` | Status and how fresh the TLE data is |
-| `GET /positions?search=&limit=` | Current position, altitude, speed and period of matching satellites |
+| `GET /groups` | Catalog groups (Stations, Africa, Weather, Navigation, Starlink, OneWeb, Comms, Other) with counts |
+| `GET /positions?search=&group=&limit=&at=` | Position, altitude, speed, period and footprint radius of matching satellites. `group` filters before `limit` (max 2000); `at` (ISO time, naive = UTC) shows any moment within ±48 h, else `422` |
 | `GET /satellite/{name}` | One satellite's current position |
 | `GET /iss` | The ISS's current position |
-| `GET /groundtrack/{name}?minutes=&step=` | Future ground track |
+| `GET /groundtrack/{name}?minutes=&step=&at=` | Ground track starting now, or at `at` |
 | `GET /observer/visibility?lat=&lon=&hours=&naked_eye_only=` | Your sky: how dark it is, every satellite above your horizon (elevation, azimuth, range, sunlit?, estimated magnitude, per-second motion rates) and upcoming passes (up to 72 h) classified as `visible`, `faint`, `in_shadow` or `daylight` |
 | `GET /passes/iss?lat=&lon=` | ISS passes over a location |
 | `GET /passes/african/{name}?lat=&lon=` | Passes of a named satellite (defaults to Pretoria) |
 
 Name matching ignores case, spaces and punctuation (`zacube 1` finds `ZACUBE-1`).
 Unknown satellites return `404`; invalid coordinates return `422`.
+
+## Groups, time travel and footprints
+
+Groups come from satellite **names** (e.g. `STARLINK-…`, `NOAA …`, `GPS …`), so they are a
+good heuristic, not an official classification. "Africa" matches the name tokens in
+`AFRICA_NAME_TOKENS` (`backend/config.py`). Time travel is limited to `MAX_TIME_TRAVEL_HOURS`
+(default 48); orbits get less accurate the further from the TLE epoch. The footprint circle is the
+area from which the satellite is above the horizon.
 
 ## How the data works
 
@@ -82,10 +91,11 @@ magnitudes are approximate: refine them with McCants' `qs.mag` or Heavens-Above 
 | `VISIBILITY_CACHE_SECONDS` | `5` | How long a visibility result is reused |
 | `CELESTRAK_URL` | active satellites | TLE source |
 | `DARK_SKY_SUN_ALTITUDE_DEG` | `-6` | Sun must be below this for the sky to count as dark |
+| `MAX_TIME_TRAVEL_HOURS` | `48` | How far from now `at=` may reach |
 | `NAKED_EYE_LIMIT_MAG` | `4.5` | Faintest magnitude treated as visible (~5.5 dark site, ~4 in a suburb) |
 
 ## Roadmap
 
-- Catalog filters, marker clustering and a time slider
+- Marker clustering was skipped on purpose (it fights moving satellites; a canvas layer is used instead)
 - 3D globe, phone-orientation AR, pass alerts
 - Brightness data for more satellites (beyond ISS, Tiangong and Hubble)
