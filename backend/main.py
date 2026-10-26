@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse, Response
 
 from backend import config
 from backend.satellites.african import AFRICAN_SATELLITES
+from backend.services import africa
 from backend.services import satellites as catalog
 from backend.services import tle_service
 from backend.services.ics import passes_to_ics
@@ -18,6 +19,7 @@ from backend.services.passes import predict_passes, resolve_satellite
 from backend.services.visibility import (
     MAX_PASS_HOURS,
     PASS_HOURS_AHEAD,
+    compute_passes_over,
     compute_visibility_cached,
 )
 
@@ -143,8 +145,66 @@ def get_positions(
     for sat in sats:
         pos = get_satellite_position(sat, t)
         if pos:
-            results.append({"name": sat.name, "group": group_of.get(sat.name, "other"), **pos})
+            entry = {"name": sat.name, "group": group_of.get(sat.name, "other"), **pos}
+            if entry["group"] == "africa":
+                entry["country"] = africa.country_of(sat.name)
+            results.append(entry)
     return results
+
+
+# ---------------------------------------------------------------------------
+# Africa
+# ---------------------------------------------------------------------------
+def _african_sats():
+    return catalog.select(None, "africa", limit=None)
+
+
+@app.get("/africa")
+def africa_overview():
+    """African satellites in the catalog, by country, with where they are now.
+
+    `unmatched` lists name-table entries that match nothing in the current catalog: a typo,
+    a decayed satellite, or a name CelesTrak spells differently. Use it to tune the table.
+    """
+    sats = _african_sats()
+    rows = []
+    for sat in sats:
+        pos = get_satellite_position(sat)
+        rows.append(
+            {
+                "name": sat.name,
+                "country": africa.country_of(sat.name),
+                "norad": sat.model.satnum,
+                "lat": pos["lat"] if pos else None,
+                "lon": pos["lon"] if pos else None,
+                "alt_km": pos["alt_km"] if pos else None,
+            }
+        )
+    rows.sort(key=lambda r: (r["country"] or "", r["name"]))
+    counts = {}
+    for r in rows:
+        counts[r["country"]] = counts.get(r["country"], 0) + 1
+    return {
+        "satellites": rows,
+        "countries": [{"country": c, "count": n} for c, n in sorted(counts.items())],
+        "unmatched": africa.unmatched_entries([s.name for s in catalog.get_satellites().values()]),
+    }
+
+
+@app.get("/africa/passes")
+def africa_passes_overhead(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    hours: int = Query(24, ge=1, le=MAX_PASS_HOURS),
+):
+    """Passes of every African satellite above 10 degrees from this spot, soonest first.
+
+    Most are not visible to the eye (small cubesats, daytime): `visibility` says so, and a
+    pass still matters for ground stations and radio listeners."""
+    passes = compute_passes_over(_african_sats(), lat, lon, hours)
+    for p in passes:
+        p["country"] = africa.country_of(p["name"])
+    return {"hours": hours, "passes": passes}
 
 
 @app.get("/satellite/{name}")

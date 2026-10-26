@@ -32,6 +32,7 @@ export default function InfoPanel({ satellite, groupLabel, onClose }: Props) {
       {groupLabel && (
         <span className="info__group" style={{ ["--chip" as string]: groupColor(satellite.group) }}>
           {groupLabel}
+          {satellite.country ? ` · ${satellite.country}` : ""}
         </span>
       )}
 

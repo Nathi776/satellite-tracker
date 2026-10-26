@@ -7,7 +7,7 @@ belongs to exactly ONE group; when several would match, the earlier entry in GRO
 """
 import re
 
-from backend import config
+from backend.services import africa
 
 # id, label, regex matched against the upper-case name (None = special handling)
 GROUPS = [
@@ -34,13 +34,8 @@ LABELS[OTHER[0]] = OTHER[1]
 ORDER = [gid for gid, _l, _r in GROUPS] + [OTHER[0]]
 
 
-def _squash(text: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", text.lower())
-
-
 def _is_african(name: str) -> bool:
-    squashed = _squash(name)
-    return any(_squash(token) in squashed for token in config.AFRICA_NAME_TOKENS)
+    return africa.is_african(name)
 
 
 def classify(name: str) -> str:

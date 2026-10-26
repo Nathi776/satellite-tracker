@@ -45,6 +45,8 @@ The tests run offline against a TLE fixture, so they don't need internet access.
 | `GET /health` | Status and how fresh the TLE data is |
 | `GET /groups` | Catalog groups (Stations, Africa, Weather, Navigation, Starlink, OneWeb, Comms, Other) with counts |
 | `GET /positions?search=&group=&limit=&at=` | Position, altitude, speed, period and footprint radius of matching satellites. `group` filters before `limit` (max 2000); `at` (ISO time, naive = UTC) shows any moment within ±48 h, else `422` |
+| `GET /africa` | African satellites by country with their current position, plus `unmatched`: name-table entries that match nothing in today's catalog |
+| `GET /africa/passes?lat=&lon=&hours=` | Passes of every African satellite over a spot, visible or not (cubesat radio and imaging passes matter even by day) |
 | `GET /satellite/{name}` | One satellite's current position |
 | `GET /iss` | The ISS's current position |
 | `GET /groundtrack/{name}?minutes=&step=&at=` | Ground track starting now, or at `at` |
@@ -60,7 +62,7 @@ Unknown satellites return `404`; invalid coordinates return `422`.
 
 Groups come from satellite **names** (e.g. `STARLINK-…`, `NOAA …`, `GPS …`), so they are a
 good heuristic, not an official classification. "Africa" matches the name tokens in
-`AFRICA_NAME_TOKENS` (`backend/config.py`). Time travel is limited to `MAX_TIME_TRAVEL_HOURS`
+the table in `backend/services/africa.py` (name prefix -> country; add your own via `EXTRA_ENTRIES` in `backend/config.py`). It was written without access to the live feed, so open `GET /africa` and check `unmatched` to see which entries match nothing today. Time travel is limited to `MAX_TIME_TRAVEL_HOURS`
 (default 48); orbits get less accurate the further from the TLE epoch. The footprint circle is the
 area from which the satellite is above the horizon.
 
