@@ -114,6 +114,28 @@ button. The button uses browser notifications, so it only fires while the page s
 calendar file for reminders that work when the app is closed. True background push alerts would need
 a server-side subscription store and are not built yet.
 
+## Sky view on your phone
+
+Open the sky panel, stay on the **Now** tab and tap **Open sky view**, then **Start**. Hold the phone
+up: satellites appear where they are in the real sky, optionally over the rear camera. Tap one to follow
+it; an arrow tells you which way to turn when it is off screen. On a computer (no sensors) you drag to look
+around instead.
+
+Phones only give web pages the compass and camera on **secure (https)** pages, and `127.0.0.1` on a phone is
+the phone itself, so to try it on your own phone:
+
+1. Start the backend as usual (`uvicorn backend.main:app --reload`).
+2. In `frontend/`: `npm install` (once, it adds a dev-only HTTPS plugin), then `npm run dev:phone`.
+3. On your phone (same Wi-Fi) open the `https://…:5173` "Network" address Vite prints and accept the
+   self-signed certificate warning. Allow Node through the Windows firewall if asked.
+
+Notes: portrait only; the field of view is a typical phone camera (65°, `FOV_V` in `SkyView.tsx`). On
+Android Chrome the compass is absolute. On iPhone the heading comes from `webkitCompassHeading`, which this app
+has not been tested with on a real device. If north looks wrong, use the **Compass fix** slider until the
+heading at the top matches a compass app. Compass accuracy near metal, or a phone that has not been calibrated
+(wave it in a figure of eight), is often 10° or worse, so expect satellites to be near, not exactly on, the
+camera image.
+
 ## Roadmap
 
 - Marker clustering was skipped on purpose (it fights moving satellites; a canvas layer is used instead)
