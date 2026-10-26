@@ -20,7 +20,7 @@ export default function AfricaPasses({ lat, lon, nowMs }: Props) {
 
   return (
     <>
-      <h4>🌍 African satellites over you · 24 h</h4>
+      <h4>African satellites over you · 24 h</h4>
       {error && !data && <div className="sky-muted">Couldn’t load African passes.</div>}
       {data && upcoming.length === 0 && (
         <div className="sky-muted">No African satellite rises above 10° here in the next 24 hours.</div>
