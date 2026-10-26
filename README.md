@@ -78,10 +78,19 @@ A satellite is reported as visible to the naked eye only when **all** of these h
 2. **Sunlit:** the satellite is not inside Earth's shadow (checked with Skyfield and the `de421.bsp` ephemeris).
 3. **Bright enough:** its estimated apparent magnitude is at or below `NAKED_EYE_LIMIT_MAG`, and it is more than 10° above the horizon.
 
-TLEs say nothing about a satellite's size or brightness, so (3) can only be estimated for objects
-listed in `BRIGHT_STD_MAGS` in `backend/config.py` (ISS, Tiangong and Hubble for now). Every other
-satellite is shown as *Too faint* when it is sunlit on a dark sky, never as visible. The listed
-magnitudes are approximate: refine them with McCants' `qs.mag` or Heavens-Above values.
+TLEs say nothing about a satellite's size or brightness, so (3) is only estimated for objects we
+have a brightness figure for:
+
+1. Hand-entered figures in `BRIGHT_STD_MAGS` (`backend/config.py`: ISS, Tiangong, Hubble). These win.
+2. Mike McCants' `quicksat.mag` (bundled in `backend/resources/`), matched by NORAD number: about
+   2,200 objects. Its "intrinsic magnitude" is the brightest the object gets, fully lit at 1000 km;
+   we add 1.24 to convert it to the half-lit standard magnitude our formula uses.
+
+Everything else is shown as *Too faint* when sunlit on a dark sky, never as visible. Treat file-based
+magnitudes as optimistic: the catalogue is old (it stops at NORAD 36511, so Starlink and other recent
+satellites are absent), tumbling and decayed objects are skipped, and rocket bodies can be a magnitude
+or more fainter than their listed maximum. Data credit: Mike McCants, mmccants.org. Replace the file
+with a newer copy any time.
 
 ## Configuration (environment variables)
 
@@ -93,6 +102,7 @@ magnitudes are approximate: refine them with McCants' `qs.mag` or Heavens-Above 
 | `CELESTRAK_URL` | active satellites | TLE source |
 | `DARK_SKY_SUN_ALTITUDE_DEG` | `-6` | Sun must be below this for the sky to count as dark |
 | `MAX_TIME_TRAVEL_HOURS` | `48` | How far from now `at=` may reach |
+| `QUICKSAT_MAG_PATH` | `backend/resources/quicksat.mag` | McCants' brightness catalogue. Point it at a newer copy, or at a missing file to switch it off |
 | `NAKED_EYE_LIMIT_MAG` | `4.5` | Faintest magnitude treated as visible (~5.5 dark site, ~4 in a suburb) |
 
 ## Pass alerts

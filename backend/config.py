@@ -27,6 +27,12 @@ DEFAULT_OBSERVER = {
     "elevation_m": 1350.0,
 }
 
+# McCants' brightness catalogue (see backend/services/quicksat.py). Hand-entered figures in
+# BRIGHT_STD_MAGS above take priority. Set to a missing path to turn this off.
+QUICKSAT_MAG_PATH = os.getenv(
+    "QUICKSAT_MAG_PATH", str(Path(__file__).parent / "resources" / "quicksat.mag")
+)
+
 # --- Satellite groups -------------------------------------------------------
 # Names containing any of these (case, spaces and punctuation ignored) put a satellite in
 # the "Africa" group. Satellites launched for or operated by African states/agencies; the

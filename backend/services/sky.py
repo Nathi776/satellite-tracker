@@ -9,6 +9,7 @@ import numpy as np
 from skyfield.api import Loader
 
 from backend import config
+from backend.services import quicksat
 
 # de421.bsp lives in the repo root (Skyfield downloads it there if it is missing).
 _loader = Loader(str(config.BASE_DIR.parent), verbose=False)
@@ -84,13 +85,16 @@ def _normalize(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", text.lower())
 
 
-def standard_magnitude(name: str):
-    """Intrinsic magnitude for a known bright object, or None if we have no figure."""
+def standard_magnitude(name: str, norad: int | None = None):
+    """Standard magnitude for a known object, or None if we have no figure.
+
+    Hand-entered figures (matched by name) win; otherwise McCants' quicksat.mag is
+    consulted by NORAD number."""
     wanted = _normalize(name)
     for known, mag in config.BRIGHT_STD_MAGS.items():
         if _normalize(known) == wanted:
             return mag
-    return None
+    return quicksat.standard_magnitude(norad)
 
 
 def estimate_magnitude(std_mag, range_km, phase_rad):
