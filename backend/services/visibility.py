@@ -84,7 +84,7 @@ def compute_visible_now(satellites, observer, now, sun_alt=None):
         lit = bool(geocentric.is_sunlit(sky.get_ephemeris()))
 
         magnitude = None
-        std_mag = sky.standard_magnitude(sat.name)
+        std_mag = sky.standard_magnitude(sat.name, sat.model.satnum)
         if std_mag is not None:
             phase = float(sky.phase_angle_rad(sat, observer, now))
             magnitude = float(sky.estimate_magnitude(std_mag, distance.km, phase))
@@ -135,7 +135,7 @@ def _classify_pass(sat, observer, rise_t, peak_t, set_t, min_elevation):
     lit = np.atleast_1d(sky.is_sunlit(sat, times))
     dark = np.atleast_1d(sky.is_dark_enough(sun_alt))
 
-    std_mag = sky.standard_magnitude(sat.name)
+    std_mag = sky.standard_magnitude(sat.name, sat.model.satnum)
     magnitude = None
     bright = np.zeros(n, dtype=bool)
     if std_mag is not None:
