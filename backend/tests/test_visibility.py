@@ -168,7 +168,7 @@ def test_visible_pass_brightness_is_plausible_for_iss_and_tiangong(week_of_passe
 def test_compute_visibility_reports_observer_sky():
     result = vis.compute_visibility(-25.7479, 28.2293)
     obs = result["observer"]
-    assert set(obs) == {"lat", "lon", "sun_altitude_deg", "sky", "dark_enough"}
+    assert set(obs) == {"lat", "lon", "sun_altitude_deg", "sky", "dark_enough", "declination_deg"}
     assert obs["sky"] == sky.sky_state(obs["sun_altitude_deg"])
     assert obs["dark_enough"] == (obs["sun_altitude_deg"] < config.DARK_SKY_SUN_ALTITUDE_DEG)
     assert result["generated_at"].endswith("Z")

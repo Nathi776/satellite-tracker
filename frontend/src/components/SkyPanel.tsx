@@ -4,6 +4,7 @@ import type { VisibilityResponse, VisibleSat } from "../api";
 import SkyRadar from "./SkyRadar";
 import AfricaPasses from "./AfricaPasses";
 import SkyVerdict from "./SkyVerdict";
+import SkyView from "./SkyView";
 import { Badge, PassCard } from "./PassCard";
 import {
   SKY_TEXT,
@@ -50,6 +51,7 @@ export default function SkyPanel({
 }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [tab, setTab] = useState<Tab>("now");
+  const [viewOpen, setViewOpen] = useState(false);
 
   const { observer } = visibility;
   const sky = SKY_TEXT[observer.sky];
@@ -143,6 +145,9 @@ export default function SkyPanel({
 
           {tab === "now" && (
             <>
+              <button type="button" className="sky-viewbtn" onClick={() => setViewOpen(true)}>
+                📱 Open sky view <small>(point your phone at the sky)</small>
+              </button>
               <SkyRadar sats={shown} selected={selected} onSelect={onSelect} emptyMessage={emptyMessage} />
               <div className="sky-muted sky-caption">
                 North at the top, east on the left, centre = straight overhead.
@@ -235,6 +240,15 @@ export default function SkyPanel({
 
           {tab === "africa" && <AfricaPasses lat={observer.lat} lon={observer.lon} nowMs={nowMs} />}
         </>
+      )}
+      {viewOpen && (
+        <SkyView
+          sats={shown}
+          selected={selected}
+          onSelect={onSelect}
+          onClose={() => setViewOpen(false)}
+          declinationDeg={observer.declination_deg ?? 0}
+        />
       )}
     </aside>
   );

@@ -12,6 +12,7 @@ from backend.satellites.african import AFRICAN_SATELLITES
 from backend.services import africa
 from backend.services import satellites as catalog
 from backend.services import tle_service
+from backend.services.magnetic import declination_deg
 from backend.services.ics import passes_to_ics
 from backend.services.groundtrack import get_ground_track
 from backend.services.orbit_service import get_satellite_position
@@ -276,6 +277,15 @@ def passes_calendar(
         media_type="text/calendar",
         headers={"Content-Disposition": 'attachment; filename="satellite-passes.ics"'},
     )
+
+
+@app.get("/observer/declination")
+def observer_declination(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+):
+    """Magnetic declination (degrees, east positive): true bearing = compass bearing + declination."""
+    return {"lat": lat, "lon": lon, "declination_deg": round(declination_deg(lat, lon), 2)}
 
 
 @app.get("/observer/visibility")

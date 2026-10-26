@@ -1,0 +1,136 @@
+.skyview {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: radial-gradient(ellipse at 50% 100%, #1b2a4a 0%, #0a0e1a 70%);
+  color: #fff;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.skyview__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+}
+
+.skyview__video.is-on {
+  opacity: 1;
+}
+
+.skyview__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.skyview__top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.skyview__top > * {
+  pointer-events: auto;
+}
+
+.skyview__close {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.skyview__heading {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.skyview__card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100% - 32px));
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(14, 16, 22, 0.94);
+  border: 1px solid #262b38;
+  line-height: 1.45;
+}
+
+.skyview__card h3 {
+  margin: 0 0 6px;
+}
+
+.skyview__card p {
+  margin: 0 0 12px;
+  color: #c4cbdc;
+  font-size: 14px;
+}
+
+.skyview__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.skyview__warn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(120, 53, 15, 0.85);
+  font-size: 13px;
+}
+
+.skyview__bottom {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skyview__detail,
+.skyview__hint,
+.skyview__fix {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+}
+
+.skyview__hint {
+  color: #c4cbdc;
+}
+
+.skyview__fix {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.skyview__fix input {
+  flex: 1;
+}
