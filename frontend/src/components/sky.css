@@ -256,3 +256,81 @@
 .sky-calendar {
   margin: 0 0 8px;
 }
+
+/* ---- simplified panel: status line, verdict card, tabs ---- */
+.sky-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.sky-status small {
+  margin-left: auto;
+}
+
+.sky-verdict {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #171b26;
+  border: 1px solid #262b38;
+  line-height: 1.45;
+}
+
+.sky-verdict--now {
+  border-color: #22c55e;
+  background: color-mix(in srgb, #22c55e 12%, #171b26);
+}
+
+.sky-verdict--none {
+  color: #9aa4bb;
+}
+
+.sky-verdict strong {
+  display: block;
+  font-size: 15px;
+}
+
+.sky-verdict__label {
+  display: block;
+  color: #9aa4bb;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+}
+
+.sky-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 8px;
+  background: #171b26;
+}
+
+.sky-tabs button {
+  flex: 1;
+  padding: 5px 6px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: #9aa4bb;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sky-tabs button.is-active {
+  background: #262b38;
+  color: #e8ecf4;
+  font-weight: 600;
+}
+
+.sky-caption {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.sky-verdict .sky-remind {
+  display: block;
+  margin-top: 8px;
+}
