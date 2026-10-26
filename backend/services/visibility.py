@@ -14,6 +14,7 @@ from skyfield.api import wgs84
 from backend import config
 from backend.services import satellites as catalog
 from backend.services import sky, tle_service
+from backend.services.magnetic import declination_deg
 from backend.services.satellites import ts
 
 MIN_PASS_ELEVATION_DEG = 10.0
@@ -226,6 +227,14 @@ def compute_passes(satellites, observer, t0, hours=PASS_HOURS_AHEAD,
 # ---------------------------------------------------------------------------
 # Everything for one observer
 # ---------------------------------------------------------------------------
+def _declination(lat: float, lon: float):
+    """Magnetic declination at the observer, or None if the model is unavailable."""
+    try:
+        return round(declination_deg(lat, lon), 1)
+    except Exception:
+        return None
+
+
 def compute_passes_over(satellites, lat: float, lon: float, hours: int = PASS_HOURS_AHEAD,
                         elevation_m: float = 0.0):
     """Passes of the given satellites over a ground location (see compute_passes)."""
@@ -253,6 +262,7 @@ def compute_visibility(lat: float, lon: float, elevation_m: float = 0.0,
             "sun_altitude_deg": round(sun_alt, 1),
             "sky": sky.sky_state(sun_alt),
             "dark_enough": bool(sky.is_dark_enough(sun_alt)),
+            "declination_deg": _declination(lat, lon),
         },
         "visible_now": visible_now,
         "next_passes": next_passes,

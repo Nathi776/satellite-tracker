@@ -19,21 +19,24 @@ const SMOOTHING = 0.3;
  * Where the phone is pointing, as a Basis (see utils/orientation).
  *
  * The basis lives in a ref and is updated at sensor rate, so reading it does not re-render
- * React. `compassKnown` says whether the heading is relative to north; when it is not (some
+ * React. Phone compasses point to MAGNETIC north, so `declinationDeg` (east positive) is added to
+ * turn headings into true bearings. `compassKnown` says whether the heading is relative to north; when it is not (some
  * browsers only give a relative heading) the user must set `headingFixDeg` by hand.
  */
-export function useDeviceOrientation(headingFixDeg: number) {
+export function useDeviceOrientation(headingFixDeg: number, declinationDeg = 0) {
   const [status, setStatus] = useState<SensorStatus>("idle");
   const [compassKnown, setCompassKnown] = useState(true);
   const basis = useRef<Basis | null>(null);
   const fix = useRef(headingFixDeg);
+  const decl = useRef(declinationDeg);
   const iosOffset = useRef<number | null>(null);
   const sawAbsolute = useRef(false);
   const stop = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     fix.current = headingFixDeg;
-  }, [headingFixDeg]);
+    decl.current = declinationDeg;
+  }, [headingFixDeg, declinationDeg]);
 
   useEffect(() => () => stop.current?.(), []);
 
@@ -85,7 +88,10 @@ export function useDeviceOrientation(headingFixDeg: number) {
         setCompassKnown(false);
       }
 
-      const next = deviceBasis(normalizeDeg(alpha - fix.current), e.beta, e.gamma);
+      // Absolute and iOS headings are magnetic. A relative heading has no north at all: the
+      // user's compass fix sets it, so no declination is applied on top.
+      const compassIsMagnetic = absolute || e.absolute || typeof heading === "number";
+      const next = deviceBasis(normalizeDeg(alpha - fix.current - (compassIsMagnetic ? decl.current : 0)), e.beta, e.gamma);
       basis.current = blendBasis(basis.current, next, SMOOTHING);
     };
 

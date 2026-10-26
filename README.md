@@ -129,7 +129,8 @@ the phone itself, so to try it on your own phone:
 3. On your phone (same Wi-Fi) open the `https://…:5173` "Network" address Vite prints and accept the
    self-signed certificate warning. Allow Node through the Windows firewall if asked.
 
-Notes: portrait only; the field of view is a typical phone camera (65°, `FOV_V` in `SkyView.tsx`). On
+Notes: phone compasses point to *magnetic* north, so the app adds the magnetic declination at your location
+(from the World Magnetic Model via `pygeomag`, about −20° in Pretoria; `GET /observer/declination`). Portrait only; the field of view is a typical phone camera (65°, `FOV_V` in `SkyView.tsx`). On
 Android Chrome the compass is absolute. On iPhone the heading comes from `webkitCompassHeading`, which this app
 has not been tested with on a real device. If north looks wrong, use the **Compass fix** slider until the
 heading at the top matches a compass app. Compass accuracy near metal, or a phone that has not been calibrated

@@ -83,6 +83,8 @@ export type VisibilityResponse = {
     sun_altitude_deg: number;
     sky: SkyState;
     dark_enough: boolean;
+    /** magnetic declination in degrees, east positive; null if unavailable */
+    declination_deg?: number | null;
   };
   visible_now: VisibleSat[];
   next_passes: SatPass[];

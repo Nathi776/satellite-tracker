@@ -3,3 +3,4 @@ uvicorn>=0.29
 skyfield>=1.48
 numpy>=1.26
 requests>=2.31
+pygeomag>=1.0

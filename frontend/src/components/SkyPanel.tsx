@@ -242,7 +242,13 @@ export default function SkyPanel({
         </>
       )}
       {viewOpen && (
-        <SkyView sats={shown} selected={selected} onSelect={onSelect} onClose={() => setViewOpen(false)} />
+        <SkyView
+          sats={shown}
+          selected={selected}
+          onSelect={onSelect}
+          onClose={() => setViewOpen(false)}
+          declinationDeg={observer.declination_deg ?? 0}
+        />
       )}
     </aside>
   );

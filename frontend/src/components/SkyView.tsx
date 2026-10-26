@@ -18,6 +18,8 @@ type Props = {
   selected: string | null;
   onSelect: (name: string | null) => void;
   onClose: () => void;
+  /** magnetic declination at the observer (east positive), to turn compass bearings into true ones */
+  declinationDeg?: number;
 };
 
 /** Vertical field of view of a typical rear phone camera held upright, in degrees. */
@@ -34,9 +36,9 @@ type Placed = { sat: VisibleSat; x: number; y: number };
  * The phone's compass and tilt aim a virtual camera; optionally the rear camera is shown
  * behind it. Without sensors (a computer) you drag to look around instead.
  */
-export default function SkyView({ sats, selected, onSelect, onClose }: Props) {
+export default function SkyView({ sats, selected, onSelect, onClose, declinationDeg = 0 }: Props) {
   const [headingFix, setHeadingFix] = useState(0);
-  const { status, compassKnown, basis: sensorBasis, start } = useDeviceOrientation(headingFix);
+  const { status, compassKnown, basis: sensorBasis, start } = useDeviceOrientation(headingFix, declinationDeg);
   const [started, setStarted] = useState(false);
   const [wantCamera, setWantCamera] = useState(true);
   const [cameraOn, setCameraOn] = useState(false);
@@ -251,6 +253,9 @@ export default function SkyView({ sats, selected, onSelect, onClose }: Props) {
             <label className="skyview__fix">
               Compass fix {headingFix > 0 ? "+" : ""}
               {headingFix}°
+              {Math.abs(declinationDeg) >= 0.5 && (
+                <small className="sky-muted"> (magnetic correction {declinationDeg > 0 ? "+" : ""}{declinationDeg.toFixed(0)}° applied)</small>
+              )}
               <input
                 type="range"
                 min={-180}

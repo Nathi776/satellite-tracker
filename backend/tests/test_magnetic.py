@@ -24,3 +24,9 @@ def test_endpoint():
     body = c.get("/observer/declination", params={"lat": -25.75, "lon": 28.19}).json()
     assert -23 < body["declination_deg"] < -17
     assert c.get("/observer/declination", params={"lat": 91, "lon": 0}).status_code == 422
+
+
+def test_visibility_reports_declination():
+    c = TestClient(app)
+    obs = c.get("/observer/visibility", params={"lat": -25.75, "lon": 28.19}).json()["observer"]
+    assert -23 < obs["declination_deg"] < -17
