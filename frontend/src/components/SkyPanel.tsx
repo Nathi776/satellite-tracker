@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { API_URL } from "../config";
 import type { SatPass, VisibilityResponse, VisibleSat } from "../api";
 import SkyRadar from "./SkyRadar";
+import AfricaPasses from "./AfricaPasses";
 import {
   SKY_TEXT,
   STATUS_STYLE,
@@ -282,6 +283,8 @@ export default function SkyPanel({
           ) : (
             passes.map(p => <PassCard key={`${p.name}-${p.rise_time_utc}`} pass={p} nowMs={nowMs} />)
           )}
+
+          <AfricaPasses lat={observer.lat} lon={observer.lon} nowMs={nowMs} />
         </>
       )}
     </aside>

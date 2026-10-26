@@ -12,6 +12,8 @@ export type SatellitePos = {
   lon_rate?: number;
   /** satellite group id, see /groups */
   group?: string;
+  /** African satellites only: the operating country, or "Pan-African" */
+  country?: string | null;
   /** radius of the area on the ground that can see this satellite (horizon to horizon) */
   footprint_km?: number;
 };
@@ -61,6 +63,8 @@ export type SatPass = {
   sun_altitude_deg: number;
   sunlit_at_peak: boolean;
 };
+
+export type AfricaPass = SatPass & { country: string | null };
 
 export type SkyState =
   | "day"
@@ -147,3 +151,9 @@ export const fetchGroundTrack = (
     signal,
   );
 };
+
+export const fetchAfricaPasses = (lat: number, lon: number, hours = 24, signal?: AbortSignal) =>
+  getJson<{ hours: number; passes: AfricaPass[] }>(
+    `/africa/passes?lat=${lat}&lon=${lon}&hours=${hours}`,
+    signal,
+  );

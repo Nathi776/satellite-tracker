@@ -34,15 +34,9 @@ QUICKSAT_MAG_PATH = os.getenv(
 )
 
 # --- Satellite groups -------------------------------------------------------
-# Names containing any of these (case, spaces and punctuation ignored) put a satellite in
-# the "Africa" group. Satellites launched for or operated by African states/agencies; the
-# TLE data has no operator field, so this is matched on the name only. Extend as needed.
-AFRICA_NAME_TOKENS = [
-    "ZACUBE", "SUMBANDILA", "TSHEPISOSAT", "MDASAT", "NIGERIASAT", "NIGCOMSAT", "EGYPTSAT",
-    "MISRSAT", "NILESAT", "ETRSS", "ETHIOPIA", "RASCOM", "ANGOSAT", "GHANASAT", "MOHAMMED VI",
-    "MOROCCO", "ALSAT", "ALCOMSAT", "SUDANSAT", "1KUNS", "RWANDA", "UGANDA", "TUNISIA",
-    "AFRICASAT", "AFRISTAR", "BOTSWANA", "ZIMSAT", "LESOTHO", "KENYA", "MAURITIUS",
-]
+# Extra "Africa" name prefixes as (prefix, country) pairs, on top of the table in
+# backend/services/africa.py. The TLE data has no operator field, so this is name matching.
+EXTRA_ENTRIES: list[tuple[str, str]] = []
 
 # --- Time travel ------------------------------------------------------------
 # How far from "now" /positions?at= and /groundtrack?at= will go. TLEs are only
@@ -70,23 +64,6 @@ BRIGHT_STD_MAGS = {
     "CSS (TIANHE)": -1.0,
     "HST": 2.2,
 }
-
-# --- Satellite groups -------------------------------------------------------
-# The "Africa" filter. CelesTrak has no country field in its TLE feed, so these are
-# name prefixes (case and punctuation ignored). Extend the list as you find more.
-AFRICAN_SATELLITE_NAMES = [
-    "ZACUBE", "TSHEPISOSAT", "SUMBANDILA", "KONDOR",            # South Africa
-    "NIGERIASAT", "NIGCOMSAT",                                   # Nigeria
-    "EGYPTSAT", "MISRSAT", "NILESAT", "TIBA",                    # Egypt
-    "ANGOSAT",                                                   # Angola
-    "ETRSS", "ETHIOPIA",                                         # Ethiopia
-    "RASCOM",                                                    # pan-African
-    "ALSAT",                                                     # Algeria
-    "MOHAMMED VI", "MOROCCO",                                    # Morocco
-    "GHANASAT", "GHANA",                                         # Ghana
-    "KENYA", "1KUNS",                                            # Kenya
-    "RWASAT", "UGANDA", "ZIMSAT", "MAURITIUS", "TUNISIA", "SUDANSAT",
-]
 
 # How far from "now" the `at` query parameter may reach. TLEs are only accurate for a
 # few days, so beyond this the positions would be fiction.

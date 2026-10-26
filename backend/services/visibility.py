@@ -226,6 +226,12 @@ def compute_passes(satellites, observer, t0, hours=PASS_HOURS_AHEAD,
 # ---------------------------------------------------------------------------
 # Everything for one observer
 # ---------------------------------------------------------------------------
+def compute_passes_over(satellites, lat: float, lon: float, hours: int = PASS_HOURS_AHEAD,
+                        elevation_m: float = 0.0):
+    """Passes of the given satellites over a ground location (see compute_passes)."""
+    return compute_passes(satellites, _observer(lat, lon, elevation_m), ts.now(), hours=hours)
+
+
 def compute_visibility(lat: float, lon: float, elevation_m: float = 0.0,
                        hours: int = PASS_HOURS_AHEAD):
     """Observer sky state, every satellite above the horizon, and upcoming watchlist passes."""
