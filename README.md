@@ -66,6 +66,14 @@ the table in `backend/services/africa.py` (name prefix -> country; add your own 
 (default 48); orbits get less accurate the further from the TLE epoch. The footprint circle is the
 area from which the satellite is above the horizon.
 
+## Map and look
+
+- **Map styles:** Dark (default, CARTO), Satellite (Esri imagery) and Street (OpenStreetMap). Your choice is remembered in the browser. The tiles come from third-party servers, so check they load on your network.
+- **Night shading:** the day/night terminator with civil, nautical and astronomical twilight bands, computed from the Sun's position for the time shown (so it follows time travel).
+- **You are here:** a pulsing marker with a dashed circle of roughly 1,570 km, the furthest a low-orbit satellite can be and still be above your horizon.
+- **Orbit:** the selected satellite shows its past track (dashed) and future track (solid).
+- **UTC clock:** live, offline or time-travel status with the date and time in UTC.
+
 ## How the data works
 
 TLEs are downloaded from CelesTrak, cached in memory, and saved to
