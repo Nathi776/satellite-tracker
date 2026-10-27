@@ -274,3 +274,273 @@
     width: 100%;
   }
 }
+
+/* ======================================================================
+   Look: dark header, clock, map style switch, markers
+   ====================================================================== */
+.app-header {
+  background: linear-gradient(180deg, #0b1120 0%, #0a0f1c 100%);
+  border-bottom: 1px solid #1c2438;
+  padding: 10px 16px 8px;
+}
+
+.app-header__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.brand {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.searchbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  max-width: 460px;
+  min-width: 0;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #0f172a;
+  border: 1px solid #25304a;
+}
+
+.searchbox:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.app-header .searchbox input[type="search"] {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  background: transparent;
+  color: #e8ecf4;
+  padding: 9px 0;
+  outline: none;
+}
+
+.btn-primary {
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: 0 0 18px rgba(0, 119, 255, 0.35);
+}
+
+.clock {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: #9aa4bb;
+  white-space: nowrap;
+}
+
+.clock__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #e8ecf4;
+  padding-right: 14px;
+  border-right: 1px solid #25304a;
+}
+
+.clock__time strong {
+  color: #e8ecf4;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-header__row {
+  margin-top: 10px;
+}
+
+.app-header select {
+  background: #0f172a;
+  color: #e8ecf4;
+  border: 1px solid #25304a;
+}
+
+/* map surface while tiles load and under the dark style */
+.map-area .leaflet-container {
+  background: #0b1220;
+}
+
+.map--dark .leaflet-control-attribution {
+  background: rgba(10, 15, 28, 0.75);
+  color: #9aa4bb;
+}
+
+.map--dark .leaflet-control-attribution a {
+  color: #7dd3fc;
+}
+
+.leaflet-bar a {
+  background: rgba(14, 16, 22, 0.92);
+  color: #e8ecf4;
+  border-bottom-color: #262b38;
+}
+
+.leaflet-bar a:hover {
+  background: #1b2233;
+  color: #fff;
+}
+
+/* map style switch, right of the zoom buttons */
+.map-style {
+  position: absolute;
+  top: 10px;
+  left: 58px;
+  z-index: 1000;
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 10px;
+  background: rgba(14, 16, 22, 0.92);
+  border: 1px solid #262b38;
+}
+
+.map-style button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: #9aa4bb;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.map-style button.is-active {
+  background: #262b38;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* "You are here" */
+.you {
+  background: none;
+  border: none;
+}
+
+.you__dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px #3b82f6;
+}
+
+.you__pulse {
+  position: absolute;
+  left: -13px;
+  top: -13px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.35);
+  animation: you-pulse 2.4s ease-out infinite;
+}
+
+.you__label {
+  position: absolute;
+  left: 20px;
+  top: -8px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(14, 16, 22, 0.92);
+  border: 1px solid #262b38;
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+@keyframes you-pulse {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
+}
+
+/* selected satellite */
+.selsat {
+  background: none;
+  border: none;
+}
+
+.selsat__glyph {
+  position: absolute;
+  inset: 2px;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.selsat__ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--c, #fff);
+  opacity: 0.8;
+  animation: selsat-ring 1.8s ease-out infinite;
+}
+
+.selsat__label {
+  position: absolute;
+  left: 40px;
+  top: 7px;
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: rgba(14, 16, 22, 0.92);
+  border: 1px solid #262b38;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@keyframes selsat-ring {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .you__pulse,
+  .selsat__ring {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .clock__date {
+    display: none;
+  }
+
+  .brand {
+    font-size: 18px;
+  }
+
+  .searchbox {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .map-style {
+    left: 58px;
+  }
+}

@@ -16,6 +16,12 @@ import SkyPanel from "./SkyPanel";
 import SatelliteLayer from "./SatelliteLayer";
 import GroupChips from "./GroupChips";
 import TimeControl from "./TimeControl";
+import NightShade from "./NightShade";
+import ObserverMarker from "./ObserverMarker";
+import SelectedSatMarker from "./SelectedSatMarker";
+import MapStyleSwitch from "./MapStyleSwitch";
+import UtcClock from "./UtcClock";
+import { MAP_STYLES, loadMapStyle, saveMapStyle, type MapStyleId } from "../utils/mapStyles";
 import { useObserver } from "../hooks/useObserver";
 import { useDebounce } from "../hooks/useDebounce";
 import { usePolling } from "../hooks/usePolling";
@@ -152,6 +158,12 @@ export default function SatelliteMap() {
   const [selectedName, setSelectedName] = useState<string | null>(null); // map dot
   const [selectedSky, setSelectedSky] = useState<string | null>(null); // radar / list
   const [nakedEyeOnly, setNakedEyeOnly] = useState(true);
+  const [mapStyleId, setMapStyleId] = useState<MapStyleId>(loadMapStyle);
+  const mapStyle = MAP_STYLES.find(m => m.id === mapStyleId) ?? MAP_STYLES[0];
+  const changeMapStyle = useCallback((id: MapStyleId) => {
+    setMapStyleId(id);
+    saveMapStyle(id);
+  }, []);
 
   // Time travel: offsetMin is what the slider shows; atMs is the moment it means. The
   // moment is fixed when the slider moves (in the event handler), so it doesn't creep forward.
@@ -261,6 +273,30 @@ export default function SatelliteMap() {
       ? track.data.track.map(p => [p.lat, p.lon])
       : [];
 
+  // Where the satellite has just been: the same orbit, behind it.
+  const pastMinutes = Math.min(720, Math.ceil((selectedPos?.period_min ?? 90) * 0.5));
+  const pastFetcher = useMemo(
+    () =>
+      trackName
+        ? (signal: AbortSignal) =>
+            fetchGroundTrack(
+              trackName,
+              {
+                at: (travelAt ?? Date.now()) - pastMinutes * 60_000,
+                minutes: pastMinutes,
+                step: Math.max(1, Math.round(pastMinutes / 80)),
+              },
+              signal,
+            )
+        : null,
+    [trackName, pastMinutes, travelAt],
+  );
+  const pastTrack = usePolling(pastFetcher, travelAt ? TIME_TRAVEL_REFRESH_MS : TRACK_REFRESH_MS);
+  const pastPoints =
+    pastFetcher && pastTrack.data && !pastTrack.error
+      ? pastTrack.data.track.map(p => [p.lat, p.lon])
+      : [];
+
   const footprint = useMemo(
     () =>
       selectedPos?.footprint_km
@@ -284,21 +320,32 @@ export default function SatelliteMap() {
     <div className="app">
       {/* HEADER */}
       <header className="app-header">
-        <h2>🛰 Satellite Tracker</h2>
+        <div className="app-header__top">
+          <h2 className="brand">🛰 Satellite Tracker</h2>
 
-        <div className="app-header__row">
-          <input
-            type="search"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search satellite (ISS, ZACUBE...)"
-            aria-label="Search satellites"
-          />
+          <div className="searchbox">
+            <span aria-hidden="true">🔍</span>
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search satellite (ISS, ZACUBE...)"
+              aria-label="Search satellites"
+            />
+          </div>
 
           <button type="button" className="btn-primary" onClick={requestLocation}>
             📍 {location ? "Update My Location" : "Use My Location"}
           </button>
 
+          <UtcClock nowMs={nowMs} travelAtMs={travelAt} stale={stale} />
+        </div>
+
+        <div className="app-header__row">
+          <GroupChips groups={groups} active={group} onChange={setGroup} />
+          <span className="shown-note" aria-live="polite">
+            {shownNote}
+          </span>
           <label className="shown-note">
             Show up to{" "}
             <select value={limit} onChange={e => setLimit(Number(e.target.value))}>
@@ -309,29 +356,25 @@ export default function SatelliteMap() {
               ))}
             </select>
           </label>
-
           {error && (
             <span className="header-error" role="alert">
               ⚠ {error}
             </span>
           )}
         </div>
-
-        <div className="app-header__row">
-          <GroupChips groups={groups} active={group} onChange={setGroup} />
-          <span className="shown-note" aria-live="polite">
-            {shownNote}
-          </span>
-        </div>
       </header>
 
       <div className="map-area">
         {/* MAP */}
-        <MapContainer center={[0, 0]} zoom={2}>
+        <MapContainer center={[0, 0]} zoom={2} minZoom={2} className={mapStyle.dark ? "map--dark" : undefined}>
           <TileLayer
-            attribution="© OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            key={mapStyle.id}
+            attribution={mapStyle.attribution}
+            url={mapStyle.url}
+            subdomains={mapStyle.subdomains ?? "abc"}
+            maxZoom={mapStyle.maxZoom}
           />
+          <NightShade timeMs={travelAt ?? nowMs} style={mapStyle.id} />
           <ResizeWatcher />
           <FlyToGroup group={group} />
           <MapClicks onClick={() => setSelectedName(null)} />
@@ -357,10 +400,15 @@ export default function SatelliteMap() {
           />
 
           {/* Observer */}
-          {location && (
-            <Marker position={[location.lat, location.lon]}>
-              <Popup>You are here</Popup>
-            </Marker>
+          {location && <ObserverMarker lat={location.lat} lon={location.lon} />}
+
+          {selectedPos && (
+            <SelectedSatMarker
+              name={selectedPos.name}
+              lat={selectedPos.lat}
+              lon={selectedPos.lon}
+              group={selectedPos.group}
+            />
           )}
 
           {/* Satellites above your horizon, coloured by visibility */}
@@ -393,19 +441,24 @@ export default function SatelliteMap() {
             </Marker>
           ))}
 
-          {/* Ground track */}
+          {/* Orbit: where it has been (dashed, faint) and where it is going (solid) */}
+          {splitTrack(pastPoints).map((seg, i) => (
+            <Polyline
+              key={`past-${i}`}
+              positions={seg as [number, number][]}
+              pathOptions={{ color: "#5eead4", weight: 2, opacity: 0.55, dashArray: "3 7", interactive: false }}
+            />
+          ))}
           {splitTrack(trackPoints).map((seg, i) => (
             <Polyline
-              key={i}
+              key={`future-${i}`}
               positions={seg as [number, number][]}
-              pathOptions={{
-                color: "#00ffcc",
-                weight: 2,
-                dashArray: "5,5",
-              }}
+              pathOptions={{ color: "#2dd4bf", weight: 2.5, opacity: 0.95, interactive: false }}
             />
           ))}
         </MapContainer>
+
+        <MapStyleSwitch value={mapStyleId} onChange={changeMapStyle} />
 
         {/* Your sky: outside the map so it isn't tied to Leaflet's layout */}
         {visibility.data ? (
