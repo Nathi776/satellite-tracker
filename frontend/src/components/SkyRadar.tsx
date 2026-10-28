@@ -7,6 +7,8 @@ type Props = {
   onSelect: (name: string | null) => void;
   /** shown in the middle of the dial when there is nothing to plot */
   emptyMessage?: string;
+  /** max width in px (default 300) */
+  size?: number;
 };
 
 const VIEW = 300;
@@ -25,7 +27,7 @@ function project(azimuthDeg: number, elevationDeg: number) {
   return { x: C - r * Math.sin(az), y: C - r * Math.cos(az) };
 }
 
-export default function SkyRadar({ sats, selected, onSelect, emptyMessage }: Props) {
+export default function SkyRadar({ sats, selected, onSelect, emptyMessage, size = 300 }: Props) {
   // draw the interesting ones last so they sit on top of the crowd
   const ordered = [...sats].sort(
     (a, b) => Number(a.naked_eye) - Number(b.naked_eye) || Number(a.name === selected) - Number(b.name === selected),
@@ -37,7 +39,7 @@ export default function SkyRadar({ sats, selected, onSelect, emptyMessage }: Pro
       viewBox={`0 0 ${VIEW} ${VIEW}`}
       role="group"
       aria-label={`Sky radar: ${sats.length} satellites above the horizon, ${nakedEye} visible to the naked eye`}
-      style={{ width: "100%", maxWidth: 300, display: "block", margin: "0 auto", touchAction: "manipulation" }}
+      style={{ width: "100%", maxWidth: size, display: "block", margin: "0 auto", touchAction: "manipulation" }}
       onClick={() => onSelect(null)}
     >
       <defs>

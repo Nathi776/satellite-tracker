@@ -1,0 +1,148 @@
+/* desktop card row under the map */
+.bottom-cards {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1.25fr 1.1fr 0.8fr;
+  gap: 12px;
+  padding: 10px 12px 12px;
+  background: #0a0f1c;
+  border-top: 1px solid #1c2438;
+  color: #e8ecf4;
+  font-size: 12.5px;
+  box-sizing: border-box;
+}
+
+.bottom-cards .card {
+  min-width: 0;
+  padding: 10px 14px 8px;
+  border-radius: 12px;
+  background: #0e1422;
+  border: 1px solid #1f2940;
+}
+
+.bottom-cards header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.bottom-cards h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.bottom-cards h3 small {
+  font-weight: 400;
+  color: #9aa4bb;
+}
+
+.bottom-cards header button {
+  border: none;
+  background: none;
+  color: #60a5fa;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.bottom-cards table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bottom-cards th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 11px;
+  color: #8b93a7;
+  padding: 2px 6px 4px 0;
+}
+
+.bottom-cards td {
+  padding: 3px 6px 3px 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.bottom-cards td:nth-child(2) {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bottom-cards td button {
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.bottom-cards td button:hover {
+  text-decoration: underline;
+}
+
+.bottom-cards tr.is-selected td {
+  color: #7dd3fc;
+}
+
+.bottom-cards .dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--dot, #888);
+}
+
+.bottom-cards .card__empty {
+  margin: 12px 0;
+  color: #9aa4bb;
+}
+
+.bottom-cards .compass {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bottom-cards .compass dl {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.bottom-cards .compass dt {
+  font-size: 11px;
+  color: #8b93a7;
+}
+
+.bottom-cards .compass dd {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* short laptop screens: three rows per table, smaller compass */
+@media (max-height: 800px) {
+  .bottom-cards tbody tr:nth-child(n + 4) {
+    display: none;
+  }
+
+  .bottom-cards .compass svg {
+    max-width: 120px !important;
+  }
+}
+
+/* narrower than a laptop: the card row gives way to the right-hand panel */
+@media (max-width: 999px) {
+  .bottom-cards {
+    display: none;
+  }
+}

@@ -14,6 +14,9 @@ type Props = {
   /** Date.now() when `view` arrived, so its rates can move it along */
   viewReceivedAt?: number | null;
   nowMs?: number;
+  /** ground-track toggle (desktop card); omit to hide it */
+  showTrack?: boolean;
+  onShowTrackChange?: (on: boolean) => void;
   /** human label for the satellite's group, e.g. "Stations" */
   groupLabel?: string;
   onClose: () => void;
@@ -93,6 +96,8 @@ export default function InfoPanel({
   view = null,
   viewReceivedAt = null,
   nowMs = Date.now(),
+  showTrack,
+  onShowTrackChange,
   groupLabel,
   onClose,
 }: Props) {
@@ -103,6 +108,7 @@ export default function InfoPanel({
     <section className="info" aria-label={`Details for ${satellite.name}`}>
       <div className="info__head">
         <h3 title={satellite.name}>{satellite.name}</h3>
+        {view?.look.above_horizon && !timeTravel && <Badge status={view.look.status} />}
         <button type="button" className="info__close" onClick={onClose} aria-label="Close details">
           ×
         </button>
@@ -123,6 +129,18 @@ export default function InfoPanel({
         <WhereToLook view={view} receivedAt={viewReceivedAt} nowMs={nowMs} />
       ) : (
         <p className="info__note">Working out where to look…</p>
+      )}
+
+      {onShowTrackChange && (
+        <label className="info__track">
+          Show orbit track
+          <input
+            type="checkbox"
+            role="switch"
+            checked={!!showTrack}
+            onChange={e => onShowTrackChange(e.target.checked)}
+          />
+        </label>
       )}
 
       <details className="info__more">

@@ -26,12 +26,16 @@ type Props = {
   stale: boolean;
   selected: string | null;
   onSelect: (name: string | null) => void;
+  /** optional: lets the parent switch tab (e.g. from a "View all" link) */
+  tab?: SkyTab;
+  onTabChange?: (tab: SkyTab) => void;
 };
 
 const MAX_LIST = 8;
 const MAX_PASSES = 6;
 
-type Tab = "now" | "passes" | "africa";
+export type SkyTab = "now" | "passes" | "africa";
+type Tab = SkyTab;
 const TABS: { id: Tab; label: string }[] = [
   { id: "now", label: "Now" },
   { id: "passes", label: "Passes" },
@@ -48,9 +52,16 @@ export default function SkyPanel({
   stale,
   selected,
   onSelect,
+  tab: tabProp,
+  onTabChange,
 }: Props) {
   const [collapsed, setCollapsed] = useState(false);
-  const [tab, setTab] = useState<Tab>("now");
+  const [innerTab, setInnerTab] = useState<Tab>("now");
+  const tab = tabProp ?? innerTab;
+  const setTab = (t: Tab) => {
+    setInnerTab(t);
+    onTabChange?.(t);
+  };
   const [viewOpen, setViewOpen] = useState(false);
 
   const { observer } = visibility;
