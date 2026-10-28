@@ -13,7 +13,7 @@ from skyfield.api import wgs84
 
 from backend import config
 from backend.services import satellites as catalog
-from backend.services import sky, tle_service
+from backend.services import prefilter, sky, tle_service
 from backend.services.magnetic import declination_deg
 from backend.services.satellites import ts
 
@@ -50,7 +50,12 @@ def _visibility_status(dark: bool, lit: bool, naked_eye: bool) -> str:
 # ---------------------------------------------------------------------------
 # Right now
 # ---------------------------------------------------------------------------
-def compute_visible_now(satellites, observer, now, sun_alt=None, include_below_horizon=False):
+# Below this many satellites the exact calculation is quick enough on its own.
+PREFILTER_MIN_SATELLITES = 500
+
+
+def compute_visible_now(satellites, observer, now, sun_alt=None, include_below_horizon=False,
+                        prefilter_min=PREFILTER_MIN_SATELLITES):
     """Every satellite currently above the observer's horizon.
 
     Each entry carries the satellite's own lat/lon (for the map), what the observer
@@ -60,6 +65,12 @@ def compute_visible_now(satellites, observer, now, sun_alt=None, include_below_h
     if sun_alt is None:
         sun_alt = float(sky.sun_altitude_deg(observer, now))
     dark = bool(sky.is_dark_enough(sun_alt))
+
+    # For a big catalogue, first find the few percent that can be above the horizon
+    # (vectorised, tens of ms) and only run the exact calculation on those.
+    if not include_below_horizon and len(satellites) >= prefilter_min:
+        mask = prefilter.above_horizon_mask(satellites, observer, now)
+        satellites = [sat for sat, keep in zip(satellites, mask) if keep]
 
     later = ts.tt_jd(now.tt + 1.0 / 86400.0)  # one second ahead, for the rates
     observer_now = observer.at(now)
@@ -82,7 +93,7 @@ def compute_visible_now(satellites, observer, now, sun_alt=None, include_below_h
         alt2, az2, _ = (geocentric_later - observer_later).altaz()
         sub2 = geocentric_later.subpoint()
 
-        lit = bool(geocentric.is_sunlit(sky.get_ephemeris()))
+        lit = bool(sky.is_sunlit_geocentric(geocentric, now))
 
         magnitude = None
         std_mag = sky.standard_magnitude(sat.name, sat.model.satnum)

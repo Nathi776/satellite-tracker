@@ -80,6 +80,32 @@ area from which the satellite is above the horizon.
 - **Selected satellite:** tap one and (with your location set) the card shows where to look (azimuth, elevation, distance), whether you can see it, and its next pass. It is live-only, so it is replaced by a note while you time-travel. Orbit facts sit under "Orbit details".
 - **UTC clock:** live, offline or time-travel status with the date and time in UTC.
 
+## Performance
+
+`python -m backend.tools.benchmark` times the API against a synthetic catalogue of about 16,000
+satellites (the size of CelesTrak's "active" group; add `--profile` to see where the time goes,
+`-n 5000` for a smaller one). Measured on a 2-core sandbox:
+
+| What | Before | After |
+|---|---|---|
+| Your sky, nobody has asked recently (`/observer/visibility`) | 2.4 s | 0.5 s |
+| Same, within the 5-second cache | 30 ms | 30 ms |
+| Every satellite above the horizon (the heavy part) | 2.3 s | 0.4 s |
+| `/positions?limit=300` | 0.2 s | 0.2 s |
+| `/positions?limit=2000` | 1.1 s | 1.1 s |
+| Building the catalogue (once per TLE download, every 6 h) | 3.1 s | 3.1 s |
+
+How: `services/prefilter.py` runs SGP4 for the whole catalogue at once and finds the roughly 5%
+that can be above the horizon; the exact Skyfield calculation then runs only on those. The Sun's
+position is looked up once per request instead of once per satellite. Results are identical to the
+exact path (tests compare them for five observers, including near the pole, and check that no
+satellite above the horizon is ever dropped).
+
+Each browser asks for its sky every 5 seconds, and one request holds a CPU core for about half a
+second, so budget roughly ten simultaneous people in *different* places per core (people within
+about 1 km share one cached answer). The remaining big costs are `/positions` with a high limit and
+the catalogue rebuild after each download, which stalls the first request that triggers it.
+
 ## How the data works
 
 TLEs are downloaded from CelesTrak, cached in memory, and saved to
