@@ -544,3 +544,161 @@
     left: 58px;
   }
 }
+
+/* ======================================================================
+   Phone layout (<= 720px): short header, controls that don't overlap
+   ====================================================================== */
+.timebar__toggle {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  /* header: brand + clock / search + location / chips */
+  .app-header {
+    padding: 6px 10px 6px;
+  }
+
+  .app-header__top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 8px;
+    align-items: center;
+  }
+
+  .brand {
+    font-size: 16px;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .clock {
+    grid-column: 2;
+    grid-row: 1;
+    margin-left: 0;
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .clock__status {
+    padding-right: 8px;
+  }
+
+  .searchbox {
+    grid-column: 1;
+    grid-row: 2;
+    max-width: none;
+    min-width: 0;
+    padding: 0 10px;
+  }
+
+  .btn-primary {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 8px 12px;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .btn-label {
+    display: none;
+  }
+
+  .app-header__row {
+    margin-top: 6px;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .app-header__row .chips {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .app-header__row .chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shown-note--count,
+  .limit-label {
+    display: none;
+  }
+
+  .app-header select {
+    padding: 4px 6px;
+  }
+
+  /* map: style switch top-right, zoom is pinch, time pill below the switch */
+  .map-area .leaflet-control-zoom {
+    display: none;
+  }
+
+  .map-style {
+    left: auto;
+    right: 8px;
+    top: 8px;
+  }
+
+  .map-style button {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  .left-stack {
+    top: 52px;
+    left: 8px;
+    right: 8px;
+    bottom: auto;
+    width: auto;
+    align-items: flex-end;
+  }
+
+  .left-stack > * {
+    width: min(320px, 100%);
+  }
+
+  .timebar:not(.timebar--open) {
+    width: auto;
+    padding: 6px 8px;
+  }
+
+  .timebar:not(.timebar--open) .timebar__body {
+    display: none;
+  }
+
+  .timebar__toggle {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border: 1px solid #333a4d;
+    border-radius: 6px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  /* tile credit moves to the free top-left corner, away from the bottom cards */
+  .map-area .leaflet-bottom {
+    top: 0;
+    bottom: auto;
+  }
+
+  .map-area .leaflet-bottom.leaflet-right {
+    right: auto;
+    left: 0;
+    max-width: 44%;
+  }
+
+  .leaflet-control-attribution {
+    font-size: 9px;
+  }
+
+  .sky-panel,
+  .sky-hint {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+}

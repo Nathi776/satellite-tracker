@@ -1,3 +1,4 @@
+import { useState } from "react";
 import "./map-ui.css";
 
 type Props = {
@@ -22,9 +23,15 @@ export function formatOffset(min: number): string {
 export default function TimeControl({ offsetMin, onChange, shownAtMs, maxHours = 24 }: Props) {
   const max = maxHours * 60;
   const live = offsetMin === 0;
+  // On phones the control is a one-line pill until tapped; on desktop it is always open (CSS).
+  const [open, setOpen] = useState(false);
 
   return (
-    <div className="timebar" role="group" aria-label="Time travel">
+    <div
+      className={`timebar${open ? " timebar--open" : ""}`}
+      role="group"
+      aria-label="Time travel"
+    >
       <div className="timebar__top">
         <strong>
           {live ? (
@@ -47,7 +54,18 @@ export default function TimeControl({ offsetMin, onChange, shownAtMs, maxHours =
         <button type="button" className="timebar__live" onClick={() => onChange(0)} disabled={live}>
           Live
         </button>
+        <button
+          type="button"
+          className="timebar__toggle"
+          aria-expanded={open}
+          aria-label={open ? "Hide time travel slider" : "Show time travel slider"}
+          onClick={() => setOpen(o => !o)}
+        >
+          {open ? "▾" : "▴"}
+        </button>
       </div>
+
+      <div className="timebar__body">
 
       <input
         type="range"
@@ -72,6 +90,7 @@ export default function TimeControl({ offsetMin, onChange, shownAtMs, maxHours =
           Orbits are less accurate the further from now. The “Your sky” panel stays live.
         </small>
       )}
+      </div>
     </div>
   );
 }

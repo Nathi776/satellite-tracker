@@ -72,6 +72,7 @@ area from which the satellite is above the horizon.
 - **Night shading:** the day/night terminator with civil, nautical and astronomical twilight bands, computed from the Sun's position for the time shown (so it follows time travel).
 - **You are here:** a pulsing marker with a dashed circle of roughly 1,570 km, the furthest a low-orbit satellite can be and still be above your horizon.
 - **Orbit:** the selected satellite shows its past track (dashed) and future track (solid).
+- **Phones:** a compact header (search and a location button on one row, group chips scroll sideways), the map style switch top-right, the time-travel slider folded into a small pill you tap to open, and the map credit in the top-left corner. Zoom is by pinch.
 - **UTC clock:** live, offline or time-travel status with the date and time in UTC.
 
 ## How the data works

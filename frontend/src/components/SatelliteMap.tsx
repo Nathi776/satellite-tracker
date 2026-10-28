@@ -322,6 +322,7 @@ export default function SatelliteMap() {
       <header className="app-header">
         <div className="app-header__top">
           <h2 className="brand">🛰 Satellite Tracker</h2>
+          <UtcClock nowMs={nowMs} travelAtMs={travelAt} stale={stale} />
 
           <div className="searchbox">
             <span aria-hidden="true">🔍</span>
@@ -334,20 +335,24 @@ export default function SatelliteMap() {
             />
           </div>
 
-          <button type="button" className="btn-primary" onClick={requestLocation}>
-            📍 {location ? "Update My Location" : "Use My Location"}
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={requestLocation}
+            aria-label={location ? "Update my location" : "Use my location"}
+          >
+            <span aria-hidden="true">📍</span>
+            <span className="btn-label">{location ? "Update My Location" : "Use My Location"}</span>
           </button>
-
-          <UtcClock nowMs={nowMs} travelAtMs={travelAt} stale={stale} />
         </div>
 
         <div className="app-header__row">
           <GroupChips groups={groups} active={group} onChange={setGroup} />
-          <span className="shown-note" aria-live="polite">
+          <span className="shown-note shown-note--count" aria-live="polite">
             {shownNote}
           </span>
           <label className="shown-note">
-            Show up to{" "}
+            <span className="limit-label">Show up to</span>{" "}
             <select value={limit} onChange={e => setLimit(Number(e.target.value))}>
               {LIMITS.map(n => (
                 <option key={n} value={n}>
