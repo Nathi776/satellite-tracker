@@ -64,6 +64,15 @@ export type SatPass = {
   sunlit_at_peak: boolean;
 };
 
+/** Where to look for one satellite from the observer, even if it is below the horizon. */
+export type SatelliteView = {
+  name: string;
+  generated_at: string;
+  sky: SkyState;
+  look: VisibleSat & { above_horizon: boolean; direction: string };
+  next_pass: SatPass | null;
+};
+
 export type AfricaPass = SatPass & { country: string | null };
 
 export type SkyState =
@@ -157,5 +166,16 @@ export const fetchGroundTrack = (
 export const fetchAfricaPasses = (lat: number, lon: number, hours = 24, signal?: AbortSignal) =>
   getJson<{ hours: number; passes: AfricaPass[] }>(
     `/africa/passes?lat=${lat}&lon=${lon}&hours=${hours}`,
+    signal,
+  );
+
+export const fetchSatelliteView = (
+  name: string,
+  lat: number,
+  lon: number,
+  signal?: AbortSignal,
+) =>
+  getJson<SatelliteView>(
+    `/satellite/${encodeURIComponent(name)}/view?lat=${lat}&lon=${lon}&hours=48`,
     signal,
   );

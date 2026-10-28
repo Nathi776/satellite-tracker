@@ -21,6 +21,7 @@ from backend.services.visibility import (
     MAX_PASS_HOURS,
     PASS_HOURS_AHEAD,
     compute_passes_over,
+    compute_satellite_view,
     compute_visibility_cached,
 )
 
@@ -215,6 +216,26 @@ def get_satellite(name: str):
     if position is None:
         raise HTTPException(status_code=422, detail=f"Cannot propagate orbit for '{sat.name}'")
     return {"name": sat.name, "position": position}
+
+
+@app.get("/satellite/{name}/view")
+def satellite_view(
+    name: str,
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    hours: int = Query(PASS_HOURS_AHEAD, ge=1, le=MAX_PASS_HOURS, description="How far ahead to look for the next pass"),
+):
+    """Where to look for this satellite from (lat, lon) now, and its next pass.
+
+    `look` has azimuth/elevation/distance (elevation < 0 means below the horizon),
+    `above_horizon`, `status` (visible | faint | in_shadow | daylight) and `magnitude`.
+    `next_pass` is the next rise-peak-set above 10 degrees, or null.
+    """
+    sat = _get_or_404(name)
+    result = compute_satellite_view(sat, lat, lon, hours)
+    if result is None:
+        raise HTTPException(status_code=422, detail=f"Cannot propagate orbit for '{sat.name}'")
+    return {"name": sat.name, **result}
 
 
 @app.get("/iss")
