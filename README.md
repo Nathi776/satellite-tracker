@@ -73,6 +73,7 @@ area from which the satellite is above the horizon.
 - **Night shading:** the day/night terminator with civil, nautical and astronomical twilight bands, computed from the Sun's position for the time shown (so it follows time travel).
 - **You are here:** a pulsing marker with a dashed circle of roughly 1,570 km, the furthest a low-orbit satellite can be and still be above your horizon.
 - **Orbit:** the selected satellite shows its past track (dashed) and future track (solid).
+- **Desktop layout (≥ 1000 px wide):** the selected satellite (or "Your sky") is one column on the right, and three cards under the map show visible satellites, next passes and a sky compass (click a row to select it, "View all" opens the full list). Narrower windows keep the right-hand column only. The orbit track can be switched off per satellite.
 - **Phones:** a compact header (search and a location button on one row, group chips scroll sideways), the map style switch top-right, the time-travel slider folded into a small pill you tap to open, and the map credit in the top-left corner. Zoom is by pinch.
 - **Selected satellite:** tap one and (with your location set) the card shows where to look (azimuth, elevation, distance), whether you can see it, and its next pass. It is live-only, so it is replaced by a note while you time-travel. Orbit facts sit under "Orbit details".
 - **UTC clock:** live, offline or time-travel status with the date and time in UTC.

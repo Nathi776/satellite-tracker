@@ -12,7 +12,10 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import InfoPanel from "./InfoPanel";
-import SkyPanel from "./SkyPanel";
+import BottomCards from "./BottomCards";
+import SkyLabels from "./SkyLabels";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import SkyPanel, { type SkyTab } from "./SkyPanel";
 import SatelliteLayer from "./SatelliteLayer";
 import GroupChips from "./GroupChips";
 import TimeControl from "./TimeControl";
@@ -160,6 +163,11 @@ export default function SatelliteMap() {
   const [selectedName, setSelectedName] = useState<string | null>(null); // map dot
   const [selectedSky, setSelectedSky] = useState<string | null>(null); // radar / list
   const [nakedEyeOnly, setNakedEyeOnly] = useState(true);
+  const [skyTab, setSkyTab] = useState<SkyTab>("now");
+  const [showTrack, setShowTrack] = useState(true);
+  // desktop layout: detail card on the right; wide screens also get the card row under the map
+  const wide = useMediaQuery("(min-width: 721px)");
+  const cardRow = useMediaQuery("(min-width: 1000px)");
   const [mapStyleId, setMapStyleId] = useState<MapStyleId>(loadMapStyle);
   const mapStyle = MAP_STYLES.find(m => m.id === mapStyleId) ?? MAP_STYLES[0];
   const changeMapStyle = useCallback((id: MapStyleId) => {
@@ -420,6 +428,8 @@ export default function SatelliteMap() {
           />
 
           {/* Observer */}
+          {!timeTravelling && wide && <SkyLabels sats={mapSats} skip={selectedPos?.name ?? null} onSelect={n => { setSelectedSky(n); setSelectedName(n); }} />}
+
           {location && <ObserverMarker lat={location.lat} lon={location.lon} />}
 
           {selectedPos && (
@@ -462,14 +472,14 @@ export default function SatelliteMap() {
           ))}
 
           {/* Orbit: where it has been (dashed, faint) and where it is going (solid) */}
-          {splitTrack(pastPoints).map((seg, i) => (
+          {(showTrack || !selectedPos) && splitTrack(pastPoints).map((seg, i) => (
             <Polyline
               key={`past-${i}`}
               positions={seg as [number, number][]}
               pathOptions={{ color: "#5eead4", weight: 2, opacity: 0.55, dashArray: "3 7", interactive: false }}
             />
           ))}
-          {splitTrack(trackPoints).map((seg, i) => (
+          {(showTrack || !selectedPos) && splitTrack(trackPoints).map((seg, i) => (
             <Polyline
               key={`future-${i}`}
               positions={seg as [number, number][]}
@@ -481,54 +491,100 @@ export default function SatelliteMap() {
         <MapStyleSwitch value={mapStyleId} onChange={changeMapStyle} />
 
         {/* Your sky: outside the map so it isn't tied to Leaflet's layout */}
-        {visibility.data ? (
-          <SkyPanel
-            visibility={visibility.data}
-            sats={liveSats}
-            nakedEyeOnly={nakedEyeOnly}
-            onNakedEyeOnlyChange={setNakedEyeOnly}
-            nowMs={nowMs}
-            ageSeconds={visibilityAge}
-            stale={stale}
-            selected={selectedSky}
-            onSelect={setSelectedSky}
-          />
-        ) : (
-          <div className="sky-hint">
-            {location ? (
-              visibility.error ? (
-                <>⚠ Couldn’t load your sky: {visibility.error}</>
+        {(() => {
+          const skyBlock = visibility.data ? (
+            <SkyPanel
+              visibility={visibility.data}
+              sats={liveSats}
+              nakedEyeOnly={nakedEyeOnly}
+              onNakedEyeOnlyChange={setNakedEyeOnly}
+              nowMs={nowMs}
+              ageSeconds={visibilityAge}
+              stale={stale}
+              selected={selectedSky}
+              onSelect={setSelectedSky}
+              tab={skyTab}
+              onTabChange={setSkyTab}
+            />
+          ) : (
+            <div className="sky-hint">
+              {location ? (
+                visibility.error ? (
+                  <>⚠ Couldn’t load your sky: {visibility.error}</>
+                ) : (
+                  <>Working out what’s above you…</>
+                )
               ) : (
-                <>Working out what’s above you…</>
-              )
-            ) : (
-              <>
-                📍 Tap <strong>Use My Location</strong> to see which satellites are above you,
-                whether you can see them, and when the next pass is.
-              </>
-            )}
-          </div>
-        )}
+                <>
+                  📍 Tap <strong>Use My Location</strong> to see which satellites are above you,
+                  whether you can see them, and when the next pass is.
+                </>
+              )}
+            </div>
+          );
 
-        <div className="left-stack">
-          <InfoPanel
-            satellite={selectedPos}
-            hasLocation={!!location}
-            timeTravel={travelAt !== null}
-            view={viewData}
-            viewReceivedAt={satView.receivedAt}
-            nowMs={nowMs}
-            groupLabel={groupLabel(selectedPos?.group)}
-            onClose={() => setSelectedName(null)}
-          />
-          <TimeControl
-            offsetMin={travel.offsetMin}
-            onChange={onTravelChange}
-            shownAtMs={travelAt}
-            maxHours={TIME_TRAVEL_HOURS}
-          />
-        </div>
+          const infoBlock = (
+            <InfoPanel
+              satellite={selectedPos}
+              hasLocation={!!location}
+              timeTravel={travelAt !== null}
+              view={viewData}
+              viewReceivedAt={satView.receivedAt}
+              nowMs={nowMs}
+              groupLabel={groupLabel(selectedPos?.group)}
+              onClose={() => setSelectedName(null)}
+              showTrack={wide ? showTrack : undefined}
+              onShowTrackChange={wide ? setShowTrack : undefined}
+            />
+          );
+
+          const timeBlock = (
+            <TimeControl
+              offsetMin={travel.offsetMin}
+              onChange={onTravelChange}
+              shownAtMs={travelAt}
+              maxHours={TIME_TRAVEL_HOURS}
+            />
+          );
+
+          // Wide screens: one column on the right (the selected satellite, else your sky).
+          // Phones: your sky docks to the bottom, the selected satellite and time pill sit on top.
+          return wide ? (
+            <>
+              <div className={`right-stack${selectedPos ? " right-stack--selected" : ""}`}>
+                {infoBlock}
+                {skyBlock}
+              </div>
+              <div className="left-stack">{timeBlock}</div>
+            </>
+          ) : (
+            <>
+              {skyBlock}
+              <div className="left-stack">
+                {infoBlock}
+                {timeBlock}
+              </div>
+            </>
+          );
+        })()}
       </div>
+
+      {cardRow && visibility.data && !timeTravelling && (
+        <BottomCards
+          sats={liveSats}
+          passes={visibility.data.next_passes}
+          nowMs={nowMs}
+          selected={selectedSky ?? selectedName}
+          onSelect={name => {
+            setSelectedSky(name);
+            setSelectedName(name);
+          }}
+          onViewAll={tab => {
+            setSkyTab(tab);
+            setSelectedName(null);
+          }}
+        />
+      )}
     </div>
   );
 }
