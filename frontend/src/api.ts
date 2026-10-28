@@ -71,6 +71,8 @@ export type SatelliteView = {
   sky: SkyState;
   look: VisibleSat & { above_horizon: boolean; direction: string };
   next_pass: SatPass | null;
+  /** the next few passes, soonest first (the first is `next_pass`) */
+  passes: SatPass[];
 };
 
 export type AfricaPass = SatPass & { country: string | null };
@@ -120,7 +122,25 @@ export const fetchGroups = (signal?: AbortSignal) => getJson<GroupInfo[]>("/grou
 
 const isoTime = (ms: number) => encodeURIComponent(new Date(ms).toISOString());
 
+export type SatelliteInfo = {
+  name: string;
+  norad_id: number;
+  group: string;
+  country: string | null;
+  description: string;
+  inclination_deg: number;
+  eccentricity: number;
+  period_min: number;
+  revs_per_day: number;
+  perigee_km: number;
+  apogee_km: number;
+  epoch_utc: string;
+  element_age_days: number;
+};
+
 export type PositionsQuery = {
+  /** exact satellite names (favourites); overrides search, group and limit */
+  names?: string[];
   search?: string;
   group?: string;
   limit?: number;
@@ -130,6 +150,7 @@ export type PositionsQuery = {
 
 export const fetchPositions = (q: PositionsQuery, signal?: AbortSignal) => {
   const params = [`search=${encodeURIComponent(q.search ?? "")}`];
+  for (const n of q.names ?? []) params.push(`names=${encodeURIComponent(n)}`);
   if (q.group && q.group !== "all") params.push(`group=${encodeURIComponent(q.group)}`);
   if (q.limit) params.push(`limit=${q.limit}`);
   if (q.at) params.push(`at=${isoTime(q.at)}`);
@@ -177,5 +198,14 @@ export const fetchSatelliteView = (
 ) =>
   getJson<SatelliteView>(
     `/satellite/${encodeURIComponent(name)}/view?lat=${lat}&lon=${lon}&hours=48`,
+    signal,
+  );
+
+export const fetchSatelliteInfo = (name: string, signal?: AbortSignal) =>
+  getJson<SatelliteInfo>(`/satellite/${encodeURIComponent(name)}/info`, signal);
+
+export const fetchSatellitePosition = (name: string, signal?: AbortSignal) =>
+  getJson<{ name: string; position: Omit<SatellitePos, "name"> }>(
+    `/satellite/${encodeURIComponent(name)}`,
     signal,
   );

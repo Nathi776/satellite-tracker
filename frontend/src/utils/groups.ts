@@ -9,6 +9,7 @@ export const GROUP_COLORS: Record<string, string> = {
   oneweb: "#6366f1",
   comms: "#f97316",
   other: "#94a3b8",
+  favourites: "#facc15",
 };
 
 export const groupColor = (id: string | undefined) => GROUP_COLORS[id ?? "other"] ?? GROUP_COLORS.other;

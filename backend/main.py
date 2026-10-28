@@ -16,6 +16,7 @@ from backend.services.magnetic import declination_deg
 from backend.services.ics import passes_to_ics
 from backend.services.groundtrack import get_ground_track
 from backend.services.orbit_service import get_satellite_position
+from backend.services.satinfo import satellite_info
 from backend.services.passes import predict_passes, resolve_satellite
 from backend.services.visibility import (
     MAX_PASS_HOURS,
@@ -121,6 +122,7 @@ def get_positions(
     group: str = Query(None, description="Only this group (see /groups); 'all' or empty = every group"),
     limit: int = Query(100, ge=1, le=2000),
     at: datetime = Query(None, description="Show positions at this ISO time instead of now"),
+    names: list[str] = Query(None, description="Exact satellite names (repeat the parameter); overrides search, group and limit"),
 ):
     """Position of satellites matching `search` and/or `group`, now or at time `at`.
 
@@ -134,7 +136,10 @@ def get_positions(
         raise HTTPException(status_code=422, detail=f"Unknown group '{group}'")
 
     has_search = bool(search and search.strip())
-    if has_search or (group and group != "all"):
+    if names:
+        catalogue = catalog.get_satellites()
+        sats = [catalogue[n] for n in dict.fromkeys(names) if n in catalogue][:2000]
+    elif has_search or (group and group != "all"):
         sats = catalog.select(search if has_search else None, group, limit=limit)
     else:
         priority = catalog.match_prefixes(config.PASS_WATCHLIST)
@@ -216,6 +221,16 @@ def get_satellite(name: str):
     if position is None:
         raise HTTPException(status_code=422, detail=f"Cannot propagate orbit for '{sat.name}'")
     return {"name": sat.name, "position": position}
+
+
+@app.get("/satellite/{name}/info")
+def satellite_info_endpoint(name: str):
+    """Orbit facts (NORAD id, inclination, period, perigee/apogee, element age) and a short description."""
+    sat = _get_or_404(name)
+    info = satellite_info(sat)
+    if info is None:
+        raise HTTPException(status_code=422, detail=f"Cannot work out the orbit of '{sat.name}'")
+    return info
 
 
 @app.get("/satellite/{name}/view")

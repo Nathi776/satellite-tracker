@@ -2,6 +2,7 @@ import type { SatelliteView, SatellitePos } from "../api";
 import { groupColor } from "../utils/groups";
 import { compassPoint as compass, formatClock, formatDay, formatDuration, formatMag, relativeTime } from "../utils/sky";
 import { Badge } from "./PassCard";
+import { satelliteHref } from "../hooks/useHashRoute";
 import "./map-ui.css";
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
   viewReceivedAt?: number | null;
   nowMs?: number;
   /** ground-track toggle (desktop card); omit to hide it */
+  favourite?: boolean;
+  onToggleFavourite?: (name: string) => void;
   showTrack?: boolean;
   onShowTrackChange?: (on: boolean) => void;
   /** human label for the satellite's group, e.g. "Stations" */
@@ -30,7 +33,7 @@ function period(min: number): string {
 }
 
 /** Where to look, from the observer: the server's numbers moved along by their per-second rates. */
-function WhereToLook({ view, receivedAt, nowMs }: { view: SatelliteView; receivedAt: number | null; nowMs: number }) {
+export function WhereToLook({ view, receivedAt, nowMs }: { view: SatelliteView; receivedAt: number | null; nowMs: number }) {
   const { look } = view;
   const elapsed = receivedAt ? Math.max(0, (nowMs - receivedAt) / 1000) : 0;
   const el = look.altitude_deg + look.altitude_rate * elapsed;
@@ -96,6 +99,8 @@ export default function InfoPanel({
   view = null,
   viewReceivedAt = null,
   nowMs = Date.now(),
+  favourite = false,
+  onToggleFavourite,
   showTrack,
   onShowTrackChange,
   groupLabel,
@@ -109,6 +114,18 @@ export default function InfoPanel({
       <div className="info__head">
         <h3 title={satellite.name}>{satellite.name}</h3>
         {view?.look.above_horizon && !timeTravel && <Badge status={view.look.status} />}
+        {onToggleFavourite && (
+          <button
+            type="button"
+            className={`info__star${favourite ? " is-on" : ""}`}
+            aria-pressed={favourite}
+            aria-label={favourite ? "Remove from favourites" : "Add to favourites"}
+            title={favourite ? "Remove from favourites" : "Add to favourites"}
+            onClick={() => onToggleFavourite(satellite.name)}
+          >
+            {favourite ? "★" : "☆"}
+          </button>
+        )}
         <button type="button" className="info__close" onClick={onClose} aria-label="Close details">
           ×
         </button>
@@ -181,6 +198,10 @@ export default function InfoPanel({
         )}
       </dl>
       </details>
+
+      <a className="info__details" href={satelliteHref(satellite.name)}>
+        View details →
+      </a>
     </section>
   );
 }
