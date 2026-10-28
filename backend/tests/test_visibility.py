@@ -47,7 +47,7 @@ def test_visible_entry_has_everything_the_frontend_needs():
     t = ts.utc(2025, 12, 26, 12)
     entry = entry_for_iss(t, observer_under_iss(t))
     assert set(entry) == {
-        "name", "lat", "lon", "altitude_deg", "azimuth_deg", "distance_km",
+        "name", "lat", "lon", "altitude_deg", "above_horizon", "azimuth_deg", "distance_km",
         "sunlit", "magnitude", "naked_eye", "status",
         "altitude_rate", "azimuth_rate", "lat_rate", "lon_rate",
     }

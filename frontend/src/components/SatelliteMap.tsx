@@ -30,6 +30,7 @@ import {
   fetchGroundTrack,
   fetchGroups,
   fetchPositions,
+  fetchSatelliteView,
   fetchVisibility,
   type VisibilityStatus,
   type VisibleSat,
@@ -77,6 +78,7 @@ function dotIcon(status: VisibilityStatus, big: boolean, selected: boolean) {
 
 // How often the API is asked again; in between, satellites are moved along their rates.
 const VISIBILITY_REFRESH_MS = 5000;
+const SAT_VIEW_REFRESH_MS = 10000;
 const POSITIONS_REFRESH_MS = 10000;
 const TRACK_REFRESH_MS = 60000;
 // A fixed moment in time doesn't change, so there is little reason to ask again.
@@ -234,6 +236,19 @@ export default function SatelliteMap() {
 
   const selectedPos = livePositions.find(s => s.name === selectedName) ?? null;
 
+  // Where to look for the selected satellite from here (live only: it is "now" for you).
+  const viewName = selectedPos?.name ?? null;
+  const viewFetcher = useMemo(
+    () =>
+      location && viewName && !travelAt
+        ? (signal: AbortSignal) => fetchSatelliteView(viewName, location.lat, location.lon, signal)
+        : null,
+    [location, viewName, travelAt],
+  );
+  const satView = usePolling(viewFetcher, SAT_VIEW_REFRESH_MS);
+  // ignore data that belongs to the previously selected satellite
+  const viewData = satView.data && satView.data.name === viewName ? satView.data : null;
+
   const visibilityAge = visibility.receivedAt
     ? Math.round((nowMs - visibility.receivedAt) / 1000)
     : null;
@@ -317,7 +332,7 @@ export default function SatelliteMap() {
   // UI
   // -------------------
   return (
-    <div className="app">
+    <div className={`app${selectedPos ? " app--selected" : ""}`}>
       {/* HEADER */}
       <header className="app-header">
         <div className="app-header__top">
@@ -498,6 +513,11 @@ export default function SatelliteMap() {
         <div className="left-stack">
           <InfoPanel
             satellite={selectedPos}
+            hasLocation={!!location}
+            timeTravel={travelAt !== null}
+            view={viewData}
+            viewReceivedAt={satView.receivedAt}
+            nowMs={nowMs}
             groupLabel={groupLabel(selectedPos?.group)}
             onClose={() => setSelectedName(null)}
           />

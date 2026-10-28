@@ -50,7 +50,7 @@ def _visibility_status(dark: bool, lit: bool, naked_eye: bool) -> str:
 # ---------------------------------------------------------------------------
 # Right now
 # ---------------------------------------------------------------------------
-def compute_visible_now(satellites, observer, now, sun_alt=None):
+def compute_visible_now(satellites, observer, now, sun_alt=None, include_below_horizon=False):
     """Every satellite currently above the observer's horizon.
 
     Each entry carries the satellite's own lat/lon (for the map), what the observer
@@ -74,7 +74,7 @@ def compute_visible_now(satellites, observer, now, sun_alt=None):
             continue
 
         # Skyfield yields NaN, not an exception, when SGP4 fails (e.g. decayed object).
-        if math.isnan(alt.degrees) or alt.degrees <= 0:
+        if math.isnan(alt.degrees) or (alt.degrees <= 0 and not include_below_horizon):
             continue
 
         sub = geocentric.subpoint()
@@ -103,6 +103,7 @@ def compute_visible_now(satellites, observer, now, sun_alt=None):
                 "lat": round(float(sub.latitude.degrees), 4),
                 "lon": round(float(sub.longitude.degrees), 4),
                 "altitude_deg": round(float(alt.degrees), 2),
+                "above_horizon": bool(alt.degrees > 0),
                 "azimuth_deg": round(float(az.degrees), 2),
                 "distance_km": round(float(distance.km), 1),
                 "sunlit": lit,
@@ -266,6 +267,31 @@ def compute_visibility(lat: float, lon: float, elevation_m: float = 0.0,
         },
         "visible_now": visible_now,
         "next_passes": next_passes,
+    }
+
+
+def compute_satellite_view(sat, lat: float, lon: float, hours: int = PASS_HOURS_AHEAD,
+                           elevation_m: float = 0.0):
+    """Where to look for one satellite, right now, plus its next pass.
+
+    Unlike `visible_now` this also answers for a satellite below the horizon (negative
+    elevation). Returns None if the orbit cannot be propagated.
+    """
+    observer = _observer(lat, lon, elevation_m)
+    now = ts.now()
+    sun_alt = float(sky.sun_altitude_deg(observer, now))
+    rows = compute_visible_now([sat], observer, now, sun_alt, include_below_horizon=True)
+    if not rows:
+        return None
+    look = rows[0]
+    look["direction"] = sky.compass_point(look["azimuth_deg"])
+
+    passes = compute_passes([sat], observer, now, hours=hours)
+    return {
+        "generated_at": now.utc_iso(),
+        "look": look,
+        "next_pass": passes[0] if passes else None,
+        "sky": sky.sky_state(sun_alt),
     }
 
 
