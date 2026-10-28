@@ -741,17 +741,6 @@
   vertical-align: baseline;
 }
 
-/* phones: with a satellite selected, shrink the bottom sky panel so the two cards don't overlap */
-@media (max-width: 720px) {
-  .app--selected .sky-panel:not(.sky-panel--collapsed) {
-    max-height: 30vh;
-  }
-
-  .app--selected .sky-hint {
-    display: none;
-  }
-}
-
 /* ======================================================================
    Wide screens: one column on the right, markers with labels
    ====================================================================== */
