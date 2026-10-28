@@ -14,6 +14,7 @@ import L from "leaflet";
 import InfoPanel from "./InfoPanel";
 import { splitTrack } from "../utils/track";
 import BottomCards from "./BottomCards";
+import BottomSheet, { type Snap } from "./BottomSheet";
 import SkyLabels from "./SkyLabels";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useFavourites } from "../hooks/useFavourites";
@@ -41,6 +42,7 @@ import {
   type VisibleSat,
 } from "../api";
 import {
+  SKY_TEXT,
   STATUS_STYLE,
   compassPoint,
   formatMag,
@@ -144,6 +146,9 @@ export default function SatelliteMap() {
   const [nakedEyeOnly, setNakedEyeOnly] = useState(true);
   const [skyTab, setSkyTab] = useState<SkyTab>("now");
   const [showTrack, setShowTrack] = useState(true);
+  // phone bottom sheet: how far it is open, and which tab it shows while a satellite is picked
+  const [sheetSnap, setSheetSnap] = useState<Snap>("peek");
+  const [sheetTab, setSheetTab] = useState<"sat" | "sky">("sat");
   // desktop layout: detail card on the right; wide screens also get the card row under the map
   const wide = useMediaQuery("(min-width: 721px)");
   const cardRow = useMediaQuery("(min-width: 1000px)");
@@ -241,6 +246,17 @@ export default function SatelliteMap() {
   const mapSats = timeTravelling ? [] : nakedEyeOnly ? liveSats.filter(s => s.naked_eye) : liveSats;
 
   const selectedPos = livePositions.find(s => s.name === selectedName) ?? null;
+
+  // phone sheet: picking a satellite opens it on that satellite; closing it returns to your sky
+  const pickedName = selectedPos?.name ?? null;
+  useEffect(() => {
+    if (pickedName) {
+      setSheetTab("sat");
+      setSheetSnap(s => (s === "peek" ? "half" : s));
+    } else {
+      setSheetTab("sky");
+    }
+  }, [pickedName]);
 
   // Where to look for the selected satellite from here (live only: it is "now" for you).
   const viewName = selectedPos?.name ?? null;
@@ -558,13 +574,70 @@ export default function SatelliteMap() {
               <div className="left-stack">{timeBlock}</div>
             </>
           ) : (
-            <>
-              {skyBlock}
-              <div className="left-stack">
-                {infoBlock}
-                {timeBlock}
-              </div>
-            </>
+            (() => {
+              const look = viewData?.look;
+              const summary = selectedPos ? (
+                <>
+                  <strong>{selectedPos.name}</strong>
+                  <br />
+                  <small>
+                    {look
+                      ? look.above_horizon
+                        ? `${Math.round(look.altitude_deg)}° up, towards the ${compassPoint(look.azimuth_deg)}`
+                        : "Below your horizon right now"
+                      : location
+                        ? "Working out where to look…"
+                        : "Use My Location to see where to look"}
+                  </small>
+                </>
+              ) : visibility.data ? (
+                <>
+                  <strong>
+                    {SKY_TEXT[visibility.data.observer.sky].icon} {SKY_TEXT[visibility.data.observer.sky].label}
+                  </strong>
+                  <br />
+                  <small>
+                    {liveSats.length} above your horizon · {liveSats.filter(x => x.naked_eye).length} visible by eye
+                  </small>
+                </>
+              ) : (
+                <>
+                  <strong>🔭 Your sky</strong>
+                  <br />
+                  <small>{location ? "Working out what’s above you…" : "Tap 📍 to see which satellites are above you"}</small>
+                </>
+              );
+
+              return (
+                <>
+                  <BottomSheet snap={sheetSnap} onSnapChange={setSheetSnap} summary={summary}>
+                    {selectedPos && (
+                      <div className="sky-tabs sheet__tabs" role="tablist" aria-label="Sheet sections">
+                        {(
+                          [
+                            ["sat", "Satellite"],
+                            ["sky", "Your sky"],
+                          ] as const
+                        ).map(([id, label]) => (
+                          <button
+                            key={id}
+                            type="button"
+                            role="tab"
+                            aria-selected={sheetTab === id}
+                            className={sheetTab === id ? "is-active" : undefined}
+                            onClick={() => setSheetTab(id)}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {selectedPos && sheetTab === "sat" ? infoBlock : skyBlock}
+                  </BottomSheet>
+                  <div className="left-stack">{timeBlock}</div>
+                </>
+              );
+            })()
           );
         })()}
       </div>

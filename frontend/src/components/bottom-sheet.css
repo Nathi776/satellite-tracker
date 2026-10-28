@@ -1,0 +1,100 @@
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  background: #0b1120;
+  color: #e8ecf4;
+  border-top: 1px solid #26304a;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.45);
+  transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+  box-sizing: border-box;
+}
+
+.sheet.is-dragging {
+  transition: none;
+}
+
+.sheet__grab {
+  flex: none;
+  min-height: 88px;
+  padding: 8px 16px 10px;
+  box-sizing: border-box;
+  cursor: grab;
+  touch-action: none; /* we handle the drag ourselves */
+  user-select: none;
+  outline: none;
+}
+
+.sheet__grab:focus-visible {
+  box-shadow: inset 0 0 0 2px #3b82f6;
+  border-radius: 18px 18px 0 0;
+}
+
+.sheet__handle {
+  display: block;
+  width: 40px;
+  height: 5px;
+  margin: 0 auto 8px;
+  border-radius: 3px;
+  background: #3a4560;
+}
+
+.sheet__summary {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.sheet__summary small {
+  color: #9aa4bb;
+}
+
+.sheet__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 14px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheet--peek .sheet__body {
+  visibility: hidden;
+}
+
+/* the existing cards lose their own floating-card look inside the sheet */
+.sheet .sky-panel,
+.sheet .sky-hint,
+.sheet .info {
+  position: static;
+  width: auto;
+  max-height: none;
+  overflow: visible;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
+}
+
+.sheet .sky-panel__head {
+  display: none;
+}
+
+.sheet .sky-hint {
+  font-size: 13px;
+}
+
+.sheet__tabs {
+  margin-bottom: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    transition: none;
+  }
+}
