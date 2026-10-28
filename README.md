@@ -68,7 +68,7 @@ area from which the satellite is above the horizon.
 
 ## Map and look
 
-- **Map styles:** Dark (default, CARTO), Satellite (Esri imagery) and Street (OpenStreetMap). Your choice is remembered in the browser. The tiles come from third-party servers, so check they load on your network.
+- **Map styles:** Dark (default, Esri Dark Gray; CARTO's free dark tiles now require an API key), Satellite (Esri imagery) and Street (OpenStreetMap). Your choice is remembered in the browser. The tiles come from third-party servers, so check they load on your network.
 - **Night shading:** the day/night terminator with civil, nautical and astronomical twilight bands, computed from the Sun's position for the time shown (so it follows time travel).
 - **You are here:** a pulsing marker with a dashed circle of roughly 1,570 km, the furthest a low-orbit satellite can be and still be above your horizon.
 - **Orbit:** the selected satellite shows its past track (dashed) and future track (solid).
