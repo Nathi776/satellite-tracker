@@ -44,11 +44,12 @@ The tests run offline against a TLE fixture, so they don't need internet access.
 |---|---|
 | `GET /health` | Status and how fresh the TLE data is |
 | `GET /groups` | Catalog groups (Stations, Africa, Weather, Navigation, Starlink, OneWeb, Comms, Other) with counts |
-| `GET /positions?search=&group=&limit=&at=` | Position, altitude, speed, period and footprint radius of matching satellites. `group` filters before `limit` (max 2000); `at` (ISO time, naive = UTC) shows any moment within ±48 h, else `422` |
+| `GET /positions?search=&group=&limit=&at=&names=` | Position, altitude, speed, period and footprint radius of matching satellites. `group` filters before `limit` (max 2000); `at` (ISO time, naive = UTC) shows any moment within ±48 h, else `422`. `names` (repeat it) fetches exactly those satellites and ignores the other filters; the Favourites filter uses it |
 | `GET /africa` | African satellites by country with their current position, plus `unmatched`: name-table entries that match nothing in today's catalog |
 | `GET /africa/passes?lat=&lon=&hours=` | Passes of every African satellite over a spot, visible or not (cubesat radio and imaging passes matter even by day) |
 | `GET /satellite/{name}` | One satellite's current position |
-| `GET /satellite/{name}/view?lat=&lon=&hours=` | Where to look for one satellite from a spot: azimuth, elevation (negative = below the horizon), distance, sunlit, magnitude, visibility status, per-second motion rates, plus its next pass |
+| `GET /satellite/{name}/view?lat=&lon=&hours=` | Where to look for one satellite from a spot: azimuth, elevation (negative = below the horizon), distance, sunlit, magnitude, visibility status, per-second motion rates, plus its next pass and the next five (`passes`) |
+| `GET /satellite/{name}/info` | Orbit facts for one satellite: NORAD id, inclination, period, perigee/apogee, eccentricity, age of the element set, and a short description |
 | `GET /iss` | The ISS's current position |
 | `GET /groundtrack/{name}?minutes=&step=&at=` | Ground track starting now, or at `at` |
 | `GET /observer/visibility?lat=&lon=&hours=&naked_eye_only=` | Your sky: how dark it is, every satellite above your horizon (elevation, azimuth, range, sunlit?, estimated magnitude, per-second motion rates) and upcoming passes (up to 72 h) classified as `visible`, `faint`, `in_shadow` or `daylight` |
@@ -74,6 +75,7 @@ area from which the satellite is above the horizon.
 - **You are here:** a pulsing marker with a dashed circle of roughly 1,570 km, the furthest a low-orbit satellite can be and still be above your horizon.
 - **Orbit:** the selected satellite shows its past track (dashed) and future track (solid).
 - **Desktop layout (≥ 1000 px wide):** the selected satellite (or "Your sky") is one column on the right, and three cards under the map show visible satellites, next passes and a sky compass (click a row to select it, "View all" opens the full list). Narrower windows keep the right-hand column only. The orbit track can be switched off per satellite.
+- **Satellite pages and favourites:** tap ☆ on a satellite to keep it as a favourite (remembered in this browser; a ★ Favourites filter appears in the header). "View details" opens `#/satellite/<name>`: a map with its orbit, where to look from you, live position and speed, orbit facts and its next five passes with reminders. The page can be bookmarked or shared as a link. Your location is remembered for the browser tab so the map and the page agree.
 - **Phones:** a compact header (search and a location button on one row, group chips scroll sideways), the map style switch top-right, the time-travel slider folded into a small pill you tap to open, and the map credit in the top-left corner. Zoom is by pinch.
 - **Selected satellite:** tap one and (with your location set) the card shows where to look (azimuth, elevation, distance), whether you can see it, and its next pass. It is live-only, so it is replaced by a note while you time-travel. Orbit facts sit under "Orbit details".
 - **UTC clock:** live, offline or time-travel status with the date and time in UTC.

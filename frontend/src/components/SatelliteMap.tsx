@@ -12,9 +12,11 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import InfoPanel from "./InfoPanel";
+import { splitTrack } from "../utils/track";
 import BottomCards from "./BottomCards";
 import SkyLabels from "./SkyLabels";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useFavourites } from "../hooks/useFavourites";
 import SkyPanel, { type SkyTab } from "./SkyPanel";
 import SatelliteLayer from "./SatelliteLayer";
 import GroupChips from "./GroupChips";
@@ -93,29 +95,6 @@ const TIME_TRAVEL_HOURS = 24;
 // -------------------
 // Helpers
 // -------------------
-/** Split a ground track where it wraps across the ±180° meridian, so Leaflet
- *  doesn't draw a line straight across the whole map. */
-function splitTrack(points: number[][]) {
-  if (points.length === 0) return [];
-
-  const segments: number[][][] = [];
-  let current: number[][] = [points[0]];
-
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1];
-    const curr = points[i];
-
-    if (Math.abs(curr[1] - prev[1]) > 180) {
-      segments.push(current);
-      current = [];
-    }
-    current.push(curr);
-  }
-
-  if (current.length) segments.push(current);
-  return segments;
-}
-
 /** Fly to Africa when that filter is chosen. */
 function FlyToGroup({ group }: { group: string }) {
   const map = useMap();
@@ -196,10 +175,29 @@ export default function SatelliteMap() {
   const groups = groupsPolled.data ?? [];
   const groupLabel = (id?: string) => groups.find(g => g.id === id)?.label;
 
+  // "★ Favourites" is a filter of our own: the server just gets the exact names
+  const { favourites, isFavourite, toggle: toggleFavourite } = useFavourites();
+  const chipGroups =
+    favourites.length > 0
+      ? [...groups, { id: "favourites", label: "★ Favourites", count: favourites.length }]
+      : groups;
+  useEffect(() => {
+    if (group === "favourites" && favourites.length === 0) setGroup("all");
+  }, [group, favourites.length]);
+
   const positionsFetcher = useCallback(
     (signal: AbortSignal) =>
-      fetchPositions({ search: debouncedSearch, group, limit, at: travelAt }, signal),
-    [debouncedSearch, group, limit, travelAt],
+      fetchPositions(
+        {
+          search: debouncedSearch,
+          group: group === "favourites" ? "all" : group,
+          names: group === "favourites" && !debouncedSearch ? favourites : undefined,
+          limit,
+          at: travelAt,
+        },
+        signal,
+      ),
+    [debouncedSearch, group, favourites, limit, travelAt],
   );
   const positions = usePolling(
     positionsFetcher,
@@ -370,7 +368,7 @@ export default function SatelliteMap() {
         </div>
 
         <div className="app-header__row">
-          <GroupChips groups={groups} active={group} onChange={setGroup} />
+          <GroupChips groups={chipGroups} active={group} onChange={setGroup} />
           <span className="shown-note shown-note--count" aria-live="polite">
             {shownNote}
           </span>
@@ -533,6 +531,8 @@ export default function SatelliteMap() {
               nowMs={nowMs}
               groupLabel={groupLabel(selectedPos?.group)}
               onClose={() => setSelectedName(null)}
+              favourite={selectedPos ? isFavourite(selectedPos.name) : false}
+              onToggleFavourite={toggleFavourite}
               showTrack={wide ? showTrack : undefined}
               onShowTrackChange={wide ? setShowTrack : undefined}
             />

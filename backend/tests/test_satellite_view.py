@@ -69,3 +69,31 @@ def test_visible_now_still_excludes_satellites_below_the_horizon():
     everything = vis.compute_visible_now(sats, observer, now, include_below_horizon=True)
     assert all(s["altitude_deg"] > 0 for s in above)
     assert len(everything) >= len(above)
+
+
+def test_view_lists_several_upcoming_passes(client):
+    body = client.get("/satellite/ISS/view", params={"lat": -25.75, "lon": 28.19, "hours": 72}).json()
+    assert 1 <= len(body["passes"]) <= 5
+    assert body["passes"][0] == body["next_pass"]
+    rises = [p["rise_time_utc"] for p in body["passes"]]
+    assert rises == sorted(rises)
+
+
+def test_info_has_plausible_iss_orbit(client):
+    r = client.get("/satellite/ISS/info")
+    assert r.status_code == 200
+    i = r.json()
+    assert i["norad_id"] == 25544
+    assert 51 < i["inclination_deg"] < 52
+    assert 90 < i["period_min"] < 94
+    assert 380 < i["perigee_km"] <= i["apogee_km"] < 460
+    assert i["group"] == "stations"
+    assert "Space Station" in i["description"]
+    assert client.get("/satellite/NOPE-123/info").status_code == 404
+
+
+def test_positions_by_exact_names(client):
+    r = client.get("/positions", params=[("names", "ISS (ZARYA)"), ("names", "NOT A SAT"), ("names", "ISS (ZARYA)")])
+    assert r.status_code == 200
+    assert [s["name"] for s in r.json()] == ["ISS (ZARYA)"]
+    assert client.get("/positions", params={"names": "NOT A SAT"}).json() == []

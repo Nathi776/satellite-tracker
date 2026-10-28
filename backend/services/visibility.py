@@ -291,6 +291,7 @@ def compute_satellite_view(sat, lat: float, lon: float, hours: int = PASS_HOURS_
         "generated_at": now.utc_iso(),
         "look": look,
         "next_pass": passes[0] if passes else None,
+        "passes": passes[:5],
         "sky": sky.sky_state(sun_alt),
     }
 
