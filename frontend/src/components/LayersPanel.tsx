@@ -6,8 +6,10 @@ import "./layers-panel.css";
 
 type Props = {
   groups: GroupInfo[];
-  group: string;
-  onGroupChange: (id: string) => void;
+  /** ids of the groups being shown; empty = all */
+  selected: string[];
+  onToggleGroup: (id: string) => void;
+  onShowAllGroups: () => void;
   overlays: Record<OverlayId, boolean>;
   onToggleOverlay: (id: OverlayId) => void;
   onReset: () => void;
@@ -36,8 +38,9 @@ const OVERLAYS: { id: OverlayId; label: string; key: string }[] = [
 /** The left-hand panel on wide screens: what is drawn on the map, in one place. */
 export default function LayersPanel({
   groups,
-  group,
-  onGroupChange,
+  selected,
+  onToggleGroup,
+  onShowAllGroups,
   overlays,
   onToggleOverlay,
   onReset,
@@ -90,20 +93,22 @@ export default function LayersPanel({
       <div className="layers__group" id="layers-sats">
         Satellites
       </div>
-      <div role="radiogroup" aria-labelledby="layers-sats">
-        {rows.map(g => (
-          <label key={g.id} className="layers__row">
-            <input
-              type="radio"
-              name="layers-group"
-              checked={g.id === group}
-              onChange={() => onGroupChange(g.id)}
-            />
-            <span className="layers__dot" style={{ background: groupColor(g.id) }} />
-            <span className="layers__label">{g.label}</span>
-            <span className="layers__n">{g.count.toLocaleString()}</span>
-          </label>
-        ))}
+      <div role="group" aria-labelledby="layers-sats">
+        {rows.map(g => {
+          const isAll = g.id === "all";
+          return (
+            <label key={g.id} className="layers__row">
+              <input
+                type="checkbox"
+                checked={isAll ? selected.length === 0 : selected.includes(g.id)}
+                onChange={() => (isAll ? onShowAllGroups() : onToggleGroup(g.id))}
+              />
+              <span className="layers__dot" style={{ background: groupColor(g.id) }} />
+              <span className="layers__label">{g.label}</span>
+              <span className="layers__n">{g.count.toLocaleString()}</span>
+            </label>
+          );
+        })}
       </div>
 
       <div className="layers__group">Overlays</div>

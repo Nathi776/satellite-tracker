@@ -180,15 +180,47 @@ def group_summary() -> list:
     return groups.summarize(get_groups())
 
 
+def group_ids(group) -> list:
+    """'stations,weather' (or a list) -> ['stations', 'weather']; 'all' or empty -> []."""
+    if not group:
+        return []
+    parts = group.split(",") if isinstance(group, str) else list(group)
+    ids = [p.strip() for p in parts if p and p.strip()]
+    return [] if "all" in ids else list(dict.fromkeys(ids))
+
+
+def _fair_shares(sizes: dict, limit: int) -> dict:
+    """Split `limit` slots between groups: small groups get all they have, the rest is shared
+    equally. Otherwise one big group (Communications, 1,800 satellites) would fill every slot."""
+    shares, remaining = {}, limit
+    left = sorted(sizes, key=lambda g: sizes[g])
+    for i, gid in enumerate(left):
+        share = min(sizes[gid], remaining // (len(left) - i))
+        shares[gid] = share
+        remaining -= share
+    return shares
+
+
 def select(search=None, group=None, limit=None) -> list:
-    """Satellites matching a name search and/or a group. Both filters are applied
-    before the limit, so a limit never hides matches that come later in the catalog."""
+    """Satellites matching a name search and/or one or more groups (a list, or a comma
+    separated string). Both filters are applied before the limit, so a limit never hides
+    matches that come later in the catalog; with several groups the limit is shared fairly."""
     satellites, index, group_of = _snapshot()
     q = _normalize(search or "")
+    wanted = group_ids(group)
 
-    names = (name for norm, name in index if not q or q in norm)
-    if group and group != "all":
-        names = (name for name in names if group_of.get(name) == group)
+    names = [name for norm, name in index if not q or q in norm]
+    if wanted:
+        picked = {g: [] for g in wanted}
+        for name in names:
+            gid = group_of.get(name)
+            if gid in picked:
+                picked[gid].append(name)
+        if limit and len(wanted) > 1:
+            shares = _fair_shares({g: len(v) for g, v in picked.items()}, limit)
+            picked = {g: v[: shares[g]] for g, v in picked.items()}
+        keep = {n for v in picked.values() for n in v}
+        names = [n for n in names if n in keep]  # back to catalogue order
 
     chosen = [satellites[name] for name in names]
     return chosen[:limit] if limit else chosen
