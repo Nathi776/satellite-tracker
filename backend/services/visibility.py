@@ -96,7 +96,7 @@ def compute_visible_now(satellites, observer, now, sun_alt=None, include_below_h
         lit = bool(sky.is_sunlit_geocentric(geocentric, now))
 
         magnitude = None
-        std_mag = sky.standard_magnitude(sat.name, sat.model.satnum)
+        std_mag, mag_source = sky.standard_magnitude_info(sat.name, sat.model.satnum)
         if std_mag is not None:
             phase = float(sky.phase_angle_rad(sat, observer, now))
             magnitude = float(sky.estimate_magnitude(std_mag, distance.km, phase))
@@ -105,7 +105,7 @@ def compute_visible_now(satellites, observer, now, sun_alt=None, include_below_h
             dark
             and lit
             and alt.degrees >= MIN_NAKED_EYE_ELEVATION_DEG
-            and sky.is_bright_enough(magnitude)
+            and sky.is_bright_enough(magnitude, mag_source)
         )
 
         visible.append(
@@ -119,6 +119,8 @@ def compute_visible_now(satellites, observer, now, sun_alt=None, include_below_h
                 "distance_km": round(float(distance.km), 1),
                 "sunlit": lit,
                 "magnitude": round(magnitude, 1) if magnitude is not None else None,
+                # where the figure comes from: manual | quicksat | size (rough) | None
+                "magnitude_source": mag_source if magnitude is not None else None,
                 "naked_eye": naked_eye,
                 "status": _visibility_status(dark, lit, naked_eye),
                 # degrees per second, for client-side extrapolation between refreshes
@@ -148,13 +150,13 @@ def _classify_pass(sat, observer, rise_t, peak_t, set_t, min_elevation):
     lit = np.atleast_1d(sky.is_sunlit(sat, times))
     dark = np.atleast_1d(sky.is_dark_enough(sun_alt))
 
-    std_mag = sky.standard_magnitude(sat.name, sat.model.satnum)
+    std_mag, mag_source = sky.standard_magnitude_info(sat.name, sat.model.satnum)
     magnitude = None
     bright = np.zeros(n, dtype=bool)
     if std_mag is not None:
         phase = np.atleast_1d(sky.phase_angle_rad(sat, observer, times))
         magnitude = np.atleast_1d(sky.estimate_magnitude(std_mag, np.atleast_1d(distance.km), phase))
-        bright = np.atleast_1d(sky.is_bright_enough(magnitude))
+        bright = np.atleast_1d(sky.is_bright_enough(magnitude, mag_source))
 
     seen = dark & lit & bright & (alt_deg >= max(min_elevation, MIN_NAKED_EYE_ELEVATION_DEG))
 
@@ -176,6 +178,7 @@ def _classify_pass(sat, observer, rise_t, peak_t, set_t, min_elevation):
         "visible_until_utc": None,
         "visible_seconds": 0,
         "magnitude": None,
+        "magnitude_source": None,
     }
     if seen.any():
         idx = np.flatnonzero(seen)
@@ -185,6 +188,7 @@ def _classify_pass(sat, observer, rise_t, peak_t, set_t, min_elevation):
     if magnitude is not None:
         pool = magnitude[seen] if seen.any() else magnitude[dark & lit] if (dark & lit).any() else magnitude
         info["magnitude"] = round(float(pool.min()), 1)  # brightest moment of the pass
+        info["magnitude_source"] = mag_source
     return info
 
 

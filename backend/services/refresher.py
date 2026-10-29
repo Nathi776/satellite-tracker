@@ -14,7 +14,7 @@ import threading
 
 from backend import config
 from backend.services import satellites as catalog
-from backend.services import tle_service
+from backend.services import satcat, tle_service
 
 log = logging.getLogger(__name__)
 
@@ -46,8 +46,17 @@ def _startup() -> None:
         log.warning("Startup load failed, will retry: %s", exc)
 
 
+def _refresh_satcat() -> None:
+    """Weekly, and never allowed to disturb the orbit data refresh."""
+    try:
+        satcat.refresh_if_stale()
+    except Exception as exc:
+        log.warning("SATCAT refresh failed: %s", exc)
+
+
 def _run(stop: threading.Event) -> None:
     _startup()
+    _refresh_satcat()
     failures = 0
     while True:
         wait = tle_service.seconds_until_stale()
@@ -59,6 +68,7 @@ def _run(stop: threading.Event) -> None:
             return
         if tle_service.seconds_until_stale() not in (0, 0.0, None):
             continue  # data was refreshed by someone else in the meantime
+        _refresh_satcat()
         try:
             refresh_once()
             failures = 0

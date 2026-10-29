@@ -48,7 +48,7 @@ def test_visible_entry_has_everything_the_frontend_needs():
     entry = entry_for_iss(t, observer_under_iss(t))
     assert set(entry) == {
         "name", "lat", "lon", "altitude_deg", "above_horizon", "azimuth_deg", "distance_km",
-        "sunlit", "magnitude", "naked_eye", "status",
+        "sunlit", "magnitude", "magnitude_source", "naked_eye", "status",
         "altitude_rate", "azimuth_rate", "lat_rate", "lon_rate",
     }
     assert entry["altitude_deg"] > 85

@@ -56,8 +56,11 @@ export function formatDuration(totalSeconds: number): string {
   return rest ? `${h} h ${rest} min` : `${h} h`;
 }
 
-export const formatMag = (m: number | null) =>
-  m === null ? "unknown" : `${m > 0 ? "+" : m < 0 ? "−" : ""}${Math.abs(m).toFixed(1)}`;
+/** "+3.2"; a figure estimated from size is shown as "~+3.2" because it can be off by a magnitude. */
+export const formatMag = (m: number | null, source?: string | null) =>
+  m === null
+    ? "unknown"
+    : `${source === "size" ? "~" : ""}${m > 0 ? "+" : m < 0 ? "−" : ""}${Math.abs(m).toFixed(1)}`;
 
 export const formatClock = (iso: string) =>
   new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });

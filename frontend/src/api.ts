@@ -18,6 +18,8 @@ export type SatellitePos = {
   footprint_km?: number;
 };
 
+export type MagnitudeSource = "manual" | "quicksat" | "size";
+
 export type GroupInfo = { id: string; label: string; count: number };
 
 /** Why a satellite above the horizon can or can't be seen. */
@@ -33,6 +35,8 @@ export type VisibleSat = {
   sunlit: boolean;
   /** estimated apparent magnitude; null when we have no brightness data for this object */
   magnitude: number | null;
+  /** where the figure comes from; "size" is a rough estimate from the object's radar size */
+  magnitude_source?: MagnitudeSource | null;
   naked_eye: boolean;
   status: VisibilityStatus;
   /** degrees per second */
@@ -60,6 +64,7 @@ export type SatPass = {
   visible_until_utc: string | null;
   visible_seconds: number;
   magnitude: number | null;
+  magnitude_source?: MagnitudeSource | null;
   sun_altitude_deg: number;
   sunlit_at_peak: boolean;
 };
