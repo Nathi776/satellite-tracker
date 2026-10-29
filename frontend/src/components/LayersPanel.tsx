@@ -1,6 +1,7 @@
 import type { GroupInfo } from "../api";
 import type { OverlayId } from "../hooks/useOverlays";
 import { groupColor } from "../utils/groups";
+import { MAP_STYLES, type MapStyleId } from "../utils/mapStyles";
 import "./layers-panel.css";
 
 type Props = {
@@ -14,6 +15,14 @@ type Props = {
   onNakedEyeOnlyChange: (v: boolean) => void;
   hasLocation: boolean;
   aboveCount: number | null;
+  /** "sheet" is the phone version: map style and limit inside, no shortcut hints */
+  variant?: "panel" | "sheet";
+  mapStyleId?: MapStyleId;
+  onMapStyleChange?: (id: MapStyleId) => void;
+  limit?: number;
+  limits?: number[];
+  onLimitChange?: (n: number) => void;
+  onClose?: () => void;
 };
 
 const OVERLAYS: { id: OverlayId; label: string; key: string }[] = [
@@ -36,17 +45,47 @@ export default function LayersPanel({
   onNakedEyeOnlyChange,
   hasLocation,
   aboveCount,
+  variant = "panel",
+  mapStyleId,
+  onMapStyleChange,
+  limit,
+  limits,
+  onLimitChange,
+  onClose,
 }: Props) {
+  const sheet = variant === "sheet";
   const rows = groups.filter(g => g.count > 0 || g.id === "all");
 
   return (
-    <aside className="layers" aria-label="Layers">
+    <aside className={`layers${sheet ? " layers--sheet" : ""}`} aria-label="Layers">
       <div className="layers__head">
         <b>Layers</b>
-        <button type="button" className="layers__link" onClick={onReset}>
-          Reset
-        </button>
+        <span>
+          <button type="button" className="layers__link" onClick={onReset}>
+            Reset
+          </button>
+          {onClose && (
+            <button type="button" className="layers__link" onClick={onClose}>
+              Done
+            </button>
+          )}
+        </span>
       </div>
+
+      {sheet && mapStyleId && onMapStyleChange && (
+        <div className="layers__seg" role="group" aria-label="Map style">
+          {MAP_STYLES.map(m => (
+            <button
+              key={m.id}
+              type="button"
+              aria-pressed={mapStyleId === m.id}
+              onClick={() => onMapStyleChange(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="layers__group" id="layers-sats">
         Satellites
@@ -68,11 +107,11 @@ export default function LayersPanel({
       </div>
 
       <div className="layers__group">Overlays</div>
-      {OVERLAYS.map(o => (
+      {OVERLAYS.filter(o => !(sheet && o.id === "labels")).map(o => (
         <label key={o.id} className="layers__row">
           <input type="checkbox" checked={overlays[o.id]} onChange={() => onToggleOverlay(o.id)} />
           <span className="layers__label">{o.label}</span>
-          <kbd>{o.key}</kbd>
+          {!sheet && <kbd>{o.key}</kbd>}
         </label>
       ))}
 
@@ -97,6 +136,20 @@ export default function LayersPanel({
         <span className="layers__label">Only those visible by eye</span>
       </label>
 
+      {sheet && limit !== undefined && limits && onLimitChange && (
+        <label className="layers__row layers__limit">
+          <span className="layers__label">Show up to</span>
+          <select value={limit} onChange={e => onLimitChange(Number(e.target.value))}>
+            {limits.map(n => (
+              <option key={n} value={n}>
+                {n.toLocaleString()}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {!sheet && (
       <div className="layers__keys">
         <span>
           <kbd>S</kbd> style
@@ -108,6 +161,7 @@ export default function LayersPanel({
           <kbd>Esc</kbd> clear
         </span>
       </div>
+      )}
     </aside>
   );
 }

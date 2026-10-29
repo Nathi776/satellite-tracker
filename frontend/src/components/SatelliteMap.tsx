@@ -21,8 +21,8 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useFavourites } from "../hooks/useFavourites";
 import SkyPanel, { type SkyTab } from "./SkyPanel";
 import SatelliteLayer from "./SatelliteLayer";
-import GroupChips from "./GroupChips";
 import LayersPanel from "./LayersPanel";
+import LayersSheet from "./LayersSheet";
 import { useOverlays } from "../hooks/useOverlays";
 import { useShortcuts } from "../hooks/useShortcuts";
 import TimeControl from "./TimeControl";
@@ -162,6 +162,7 @@ export default function SatelliteMap() {
     saveMapStyle(id);
   }, []);
   const { overlays, toggle: toggleOverlay, reset: resetOverlays } = useOverlays();
+  const [layersOpen, setLayersOpen] = useState(false);
 
   // Time travel: offsetMin is what the slider shows; atMs is the moment it means. The
   // moment is fixed when the slider moves (in the event handler), so it doesn't creep forward.
@@ -356,11 +357,16 @@ export default function SatelliteMap() {
 
   const headerControls = (
         <div className="app-header__row">
-          {!wide && <GroupChips groups={chipGroups} active={group} onChange={setGroup} />}
+          {!wide && (
+            <button type="button" className="layers-btn" onClick={() => setLayersOpen(true)}>
+              <span aria-hidden="true">◫</span> Layers
+              {group !== "all" && <small>· {groupLabel(group) ?? group}</small>}
+            </button>
+          )}
           <span className="shown-note shown-note--count" aria-live="polite">
             {shownNote}
           </span>
-          <label className="shown-note">
+          <label className="shown-note shown-note--limit">
             <span className="limit-label">Show up to</span>{" "}
             <select value={limit} onChange={e => setLimit(Number(e.target.value))}>
               {LIMITS.map(n => (
@@ -686,6 +692,29 @@ export default function SatelliteMap() {
         })()}
       </div>
 
+      {!wide && (
+        <LayersSheet open={layersOpen} onClose={() => setLayersOpen(false)}>
+          <LayersPanel
+            variant="sheet"
+            groups={chipGroups}
+            group={group}
+            onGroupChange={setGroup}
+            overlays={overlays}
+            onToggleOverlay={toggleOverlay}
+            onReset={resetOverlays}
+            nakedEyeOnly={nakedEyeOnly}
+            onNakedEyeOnlyChange={setNakedEyeOnly}
+            hasLocation={!!location}
+            aboveCount={visibility.data ? liveSats.length : null}
+            mapStyleId={mapStyleId}
+            onMapStyleChange={changeMapStyle}
+            limit={limit}
+            limits={LIMITS}
+            onLimitChange={setLimit}
+            onClose={() => setLayersOpen(false)}
+          />
+        </LayersSheet>
+      )}
       {wide && (
         <StatusBar
           nowMs={nowMs}
