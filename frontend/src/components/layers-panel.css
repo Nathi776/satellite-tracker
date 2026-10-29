@@ -105,3 +105,132 @@
   color: #a9b8dc;
   font-size: 12px;
 }
+
+/* ---- phone: the same panel as a sheet over the map ---- */
+.layers-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.layers-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(3, 6, 15, 0.55);
+  cursor: pointer;
+}
+
+.layers-sheet__body {
+  position: relative;
+  max-height: 86dvh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px 18px 0 0;
+  overflow: hidden;
+  animation: layers-up 0.22s ease-out;
+}
+
+@keyframes layers-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layers-sheet__body {
+    animation: none;
+  }
+}
+
+.layers--sheet {
+  border-radius: 18px 18px 0 0;
+  border-width: 1px 0 0;
+  background: #0b1120;
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+  font-size: 15px;
+}
+
+.layers--sheet .layers__head {
+  font-size: 18px;
+}
+
+.layers--sheet .layers__head span {
+  display: flex;
+  gap: 4px;
+}
+
+.layers--sheet .layers__link {
+  min-height: 44px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.layers--sheet .layers__row {
+  min-height: 44px;
+  gap: 12px;
+}
+
+.layers--sheet .layers__row input[type="checkbox"],
+.layers--sheet .layers__row input[type="radio"] {
+  width: 20px;
+  height: 20px;
+}
+
+.layers--sheet .layers__dot {
+  width: 10px;
+  height: 10px;
+}
+
+.layers__seg {
+  display: flex;
+  margin-top: 4px;
+  border: 1px solid rgba(140, 165, 230, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.layers__seg button {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: #c3d0f0;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.layers__seg button[aria-pressed="true"] {
+  background: #2d4a9e;
+  color: #fff;
+}
+
+.layers__limit select {
+  padding: 8px 10px;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid #25304a;
+  background: #0f172a;
+  color: #e8ecf4;
+  font: inherit;
+}
+
+.layers-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #25304a;
+  background: #0f172a;
+  color: #e8ecf4;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
