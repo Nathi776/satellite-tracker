@@ -189,7 +189,7 @@ export default function SkyPanel({
                   </div>
                   <small>
                     Range {Math.round(chosen.distance_km).toLocaleString()} km
-                    {chosen.magnitude !== null && <> · est. magnitude {formatMag(chosen.magnitude)}</>}
+                    {chosen.magnitude !== null && <> · est. magnitude {formatMag(chosen.magnitude, chosen.magnitude_source)}</>}
                   </small>
                   <br />
                   <small>{STATUS_STYLE[chosen.status].hint}</small>

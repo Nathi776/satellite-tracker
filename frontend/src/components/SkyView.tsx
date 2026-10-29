@@ -271,7 +271,7 @@ export default function SkyView({ sats, selected, onSelect, onClose, declination
               <strong>{chosen.name}</strong>{" "}
               <span className="sky-muted">
                 {Math.round(chosen.altitude_deg)}° up, towards {compassPoint(chosen.azimuth_deg)}
-                {chosen.magnitude !== null && <> · mag {formatMag(chosen.magnitude)}</>} ·{" "}
+                {chosen.magnitude !== null && <> · mag {formatMag(chosen.magnitude, chosen.magnitude_source)}</>} ·{" "}
                 {STATUS_STYLE[chosen.status].label}
               </span>
             </div>

@@ -76,7 +76,7 @@ export function PassCard({ pass, nowMs }: { pass: SatPass; nowMs: number }) {
         {seen ? (
           <>
             Visible {formatClock(pass.visible_from_utc!)}–{formatClock(pass.visible_until_utc!)}
-            {pass.magnitude !== null && <> · brightest · mag {formatMag(pass.magnitude)}</>}
+            {pass.magnitude !== null && <> · brightest · mag {formatMag(pass.magnitude, pass.magnitude_source)}</>}
           </>
         ) : (
           STATUS_STYLE[pass.visibility].hint

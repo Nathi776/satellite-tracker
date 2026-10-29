@@ -9,7 +9,7 @@ import numpy as np
 from skyfield.api import Loader
 
 from backend import config
-from backend.services import quicksat
+from backend.services import quicksat, satcat
 
 # de421.bsp lives in the repo root (Skyfield downloads it there if it is missing).
 _loader = Loader(str(config.BASE_DIR.parent), verbose=False)
@@ -129,16 +129,28 @@ def _normalize(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", text.lower())
 
 
-def standard_magnitude(name: str, norad: int | None = None):
-    """Standard magnitude for a known object, or None if we have no figure.
+def standard_magnitude_info(name: str, norad: int | None = None):
+    """(standard magnitude, source) for an object, or (None, None) if we have no figure.
 
-    Hand-entered figures (matched by name) win; otherwise McCants' quicksat.mag is
-    consulted by NORAD number."""
+    Sources, best first: "manual" (hand-entered, matched by name), "quicksat" (McCants'
+    quicksat.mag, by NORAD number), "size" (estimated from the SATCAT radar cross-section:
+    rough, see satcat.py)."""
     wanted = _normalize(name)
     for known, mag in config.BRIGHT_STD_MAGS.items():
         if _normalize(known) == wanted:
-            return mag
-    return quicksat.standard_magnitude(norad)
+            return mag, "manual"
+    mag = quicksat.standard_magnitude(norad)
+    if mag is not None:
+        return mag, "quicksat"
+    mag = satcat.standard_magnitude(norad)
+    if mag is not None:
+        return mag, "size"
+    return None, None
+
+
+def standard_magnitude(name: str, norad: int | None = None):
+    """Standard magnitude for a known object, or None if we have no figure."""
+    return standard_magnitude_info(name, norad)[0]
 
 
 def estimate_magnitude(std_mag, range_km, phase_rad):
@@ -150,11 +162,16 @@ def estimate_magnitude(std_mag, range_km, phase_rad):
     return std_mag - 15.0 + 5.0 * np.log10(np.asarray(range_km, dtype=float)) - 2.5 * np.log10(phase_term)
 
 
-def is_bright_enough(magnitude):
-    """magnitude may be None (unknown brightness) or an array."""
+def is_bright_enough(magnitude, source=None):
+    """magnitude may be None (unknown brightness) or an array.
+
+    A figure estimated from size is uncertain, so it has to clear the limit by a margin."""
     if magnitude is None:
         return False
-    return np.asarray(magnitude) <= config.NAKED_EYE_LIMIT_MAG
+    limit = config.NAKED_EYE_LIMIT_MAG
+    if source == "size":
+        limit -= satcat.NAKED_EYE_MARGIN_MAG
+    return np.asarray(magnitude) <= limit
 
 
 # ---------------------------------------------------------------------------

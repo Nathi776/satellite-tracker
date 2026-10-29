@@ -144,11 +144,19 @@ have a brightness figure for:
    2,200 objects. Its "intrinsic magnitude" is the brightest the object gets, fully lit at 1000 km;
    we add 1.24 to convert it to the half-lit standard magnitude our formula uses.
 
+3. **Estimated from size** (newer satellites such as Starlink, which quicksat.mag lacks). CelesTrak's
+   SATCAT lists each object's radar cross-section (RCS, m²), downloaded weekly and cached on disk.
+   `backend/services/satcat.py` turns it into a standard magnitude with a line fitted to the
+   ~1,100 objects that have both an RCS and a McCants figure (`std = 7.9 - 2.8 * log10(RCS)`; the
+   test suite re-derives the fit from the bundled file). The scatter around the line is about
+   0.9 magnitudes, so these figures are rough: the app shows them with a tilde (`~+3.2`), the API
+   marks them `"magnitude_source": "size"`, and they must beat the limit by 0.5 magnitudes before
+   an object counts as visible to the naked eye.
+
 Everything else is shown as *Too faint* when sunlit on a dark sky, never as visible. Treat file-based
-magnitudes as optimistic: the catalogue is old (it stops at NORAD 36511, so Starlink and other recent
-satellites are absent), tumbling and decayed objects are skipped, and rocket bodies can be a magnitude
-or more fainter than their listed maximum. Data credit: Mike McCants, mmccants.org. Replace the file
-with a newer copy any time.
+magnitudes as optimistic: the catalogue is old (it stops at NORAD 36511), tumbling and decayed objects
+are skipped, and rocket bodies can be a magnitude or more fainter than their listed maximum. Data
+credit: Mike McCants, mmccants.org. Replace the file with a newer copy any time.
 
 ## Configuration (environment variables)
 
@@ -162,6 +170,8 @@ with a newer copy any time.
 | `DARK_SKY_SUN_ALTITUDE_DEG` | `-6` | Sun must be below this for the sky to count as dark |
 | `MAX_TIME_TRAVEL_HOURS` | `48` | How far from now `at=` may reach |
 | `QUICKSAT_MAG_PATH` | `backend/resources/quicksat.mag` | McCants' brightness catalogue. Point it at a newer copy, or at a missing file to switch it off |
+| `SATCAT_URL` | CelesTrak active SATCAT (CSV) | Source of object sizes for size-based brightness; empty switches it off |
+| `SATCAT_TTL_SECONDS` | `604800` | How long the downloaded SATCAT is reused (one week) |
 | `NAKED_EYE_LIMIT_MAG` | `4.5` | Faintest magnitude treated as visible (~5.5 dark site, ~4 in a suburb) |
 
 ## Pass alerts
@@ -198,4 +208,4 @@ camera image.
 
 - Marker clustering was skipped on purpose (it fights moving satellites; a canvas layer is used instead)
 - 3D globe, phone-orientation AR, pass alerts
-- Brightness data for more satellites (beyond ISS, Tiangong and Hubble)
+- Real per-satellite brightness (e.g. Starlink generations, tumbling rocket bodies) beyond the size-based estimate

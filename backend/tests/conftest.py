@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from backend import config
+from backend.services import satcat
 from backend.services import satellites as catalog
 from backend.services import tle_service
 
@@ -22,6 +23,10 @@ def offline_tles(monkeypatch, tmp_path, tle_text):
     # The background thread is tested on its own (test_refresher.py); everything else
     # keeps the simple "first request loads the data" behaviour.
     monkeypatch.setattr(config, "REFRESH_IN_BACKGROUND", False)
+    # no SATCAT downloads or disk cache in tests
+    monkeypatch.setattr(config, "SATCAT_URL", "")
+    monkeypatch.setattr(config, "SATCAT_CACHE_PATH", tmp_path / "satcat_cache.json")
+    satcat.reset_for_tests()
     tle_service.reset_for_tests()
     catalog._cache.update(version=None, snapshot=({}, [], {}))
     yield

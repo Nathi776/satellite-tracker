@@ -516,7 +516,8 @@ export default function SatelliteMap() {
                 {sat.magnitude !== null && (
                   <>
                     <br />
-                    Est. magnitude: {formatMag(sat.magnitude)}
+                    Est. magnitude: {formatMag(sat.magnitude, sat.magnitude_source)}
+                    {sat.magnitude_source === "size" && <small> (rough: from its size)</small>}
                   </>
                 )}
               </Popup>

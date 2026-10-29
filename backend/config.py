@@ -37,6 +37,16 @@ QUICKSAT_MAG_PATH = os.getenv(
     "QUICKSAT_MAG_PATH", str(Path(__file__).parent / "resources" / "quicksat.mag")
 )
 
+# --- Brightness from size ----------------------------------------------------
+# CelesTrak SATCAT (radar cross-section per object), used to estimate the brightness of
+# satellites that McCants' quicksat.mag does not cover (see backend/services/satcat.py).
+# Set SATCAT_URL to an empty string to turn it off.
+SATCAT_URL = os.getenv(
+    "SATCAT_URL", "https://celestrak.org/satcat/records.php?GROUP=active&FORMAT=csv"
+)
+SATCAT_TTL_SECONDS = int(os.getenv("SATCAT_TTL_SECONDS", str(7 * 24 * 3600)))
+SATCAT_CACHE_PATH = Path(os.getenv("SATCAT_CACHE_PATH", BASE_DIR / "data" / "satcat_cache.json"))
+
 # --- Satellite groups -------------------------------------------------------
 # Extra "Africa" name prefixes as (prefix, country) pairs, on top of the table in
 # backend/services/africa.py. The TLE data has no operator field, so this is name matching.

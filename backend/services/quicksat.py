@@ -48,6 +48,23 @@ def parse(text: str) -> dict[int, tuple[float, str]]:
     return table
 
 
+def parse_rcs(text: str) -> dict[int, tuple[float, float]]:
+    """{norad_id: (intrinsic_magnitude, rcs_m2)} for usable rows that also list an RCS
+    (columns 50-56). Used to fit the size-to-brightness line in satcat.py, not at run time."""
+    out: dict[int, tuple[float, float]] = {}
+    for line in text.splitlines():
+        if not line[:5].strip().isdigit() or int(line[:5]) >= 99999 or line[6:7] in SKIPPED_FLAGS:
+            continue
+        try:
+            mag = float(line[33:37])
+            rcs = float(line[49:56])
+        except ValueError:
+            continue
+        if rcs > 0:
+            out[int(line[:5])] = (mag, rcs)
+    return out
+
+
 def _load() -> dict[int, tuple[float, str]]:
     path = Path(config.QUICKSAT_MAG_PATH)
     try:

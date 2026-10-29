@@ -67,7 +67,7 @@ export function WhereToLook({ view, receivedAt, nowMs }: { view: SatelliteView; 
             <dt>Can you see it?</dt>
             <dd>
               <Badge status={look.status} />
-              {look.magnitude !== null && <small> mag {formatMag(look.magnitude)}</small>}
+              {look.magnitude !== null && <small> mag {formatMag(look.magnitude, look.magnitude_source)}</small>}
             </dd>
           </>
         )}
