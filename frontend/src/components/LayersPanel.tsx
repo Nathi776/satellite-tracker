@@ -19,6 +19,7 @@ type Props = {
 const OVERLAYS: { id: OverlayId; label: string; key: string }[] = [
   { id: "track", label: "Ground track", key: "T" },
   { id: "night", label: "Day / night", key: "D" },
+  { id: "range", label: "Your range", key: "O" },
   { id: "footprint", label: "Footprint", key: "F" },
   { id: "labels", label: "Labels", key: "L" },
 ];

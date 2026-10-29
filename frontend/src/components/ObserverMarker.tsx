@@ -16,10 +16,11 @@ const icon = L.divIcon({
   iconAnchor: [7, 7],
 });
 
-export default function ObserverMarker({ lat, lon }: { lat: number; lon: number }) {
+export default function ObserverMarker({ lat, lon, showRange = true }: { lat: number; lon: number; showRange?: boolean }) {
   const range = useMemo(() => footprintPolygons(lat, lon, LEO_RANGE_KM, 72), [lat, lon]);
   return (
     <>
+      {showRange && (
       <Polygon
         positions={range}
         pathOptions={{
@@ -31,6 +32,7 @@ export default function ObserverMarker({ lat, lon }: { lat: number; lon: number 
           interactive: false,
         }}
       />
+      )}
       <Marker position={[lat, lon]} icon={icon} keyboard={false} zIndexOffset={900} />
     </>
   );

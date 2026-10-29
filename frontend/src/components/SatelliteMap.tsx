@@ -13,7 +13,8 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import InfoPanel from "./InfoPanel";
 import { splitTrack } from "../utils/track";
-import BottomCards from "./BottomCards";
+import StatusBar from "./StatusBar";
+import MapCursor from "./MapCursor";
 import BottomSheet, { type Snap } from "./BottomSheet";
 import SkyLabels from "./SkyLabels";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -152,9 +153,8 @@ export default function SatelliteMap() {
   // phone bottom sheet: how far it is open, and which tab it shows while a satellite is picked
   const [sheetSnap, setSheetSnap] = useState<Snap>("peek");
   const [sheetTab, setSheetTab] = useState<"sat" | "sky">("sat");
-  // desktop layout: detail card on the right; wide screens also get the card row under the map
+  // desktop layout: layers on the left, detail card on the right, status bar under the map
   const wide = useMediaQuery("(min-width: 721px)");
-  const cardRow = useMediaQuery("(min-width: 1000px)");
   const [mapStyleId, setMapStyleId] = useState<MapStyleId>(loadMapStyle);
   const mapStyle = MAP_STYLES.find(m => m.id === mapStyleId) ?? MAP_STYLES[0];
   const changeMapStyle = useCallback((id: MapStyleId) => {
@@ -354,57 +354,7 @@ export default function SatelliteMap() {
       ? `Showing ${livePositions.length.toLocaleString()} of ${groupTotal.toLocaleString()}`
       : `${livePositions.length.toLocaleString()} shown`;
 
-  // Keyboard shortcuts (wide screens; they do nothing while typing in a field)
-  useShortcuts({
-    s: () => {
-      const i = MAP_STYLES.findIndex(m => m.id === mapStyleId);
-      changeMapStyle(MAP_STYLES[(i + 1) % MAP_STYLES.length].id);
-    },
-    d: () => toggleOverlay("night"),
-    t: () => toggleOverlay("track"),
-    f: () => toggleOverlay("footprint"),
-    l: () => toggleOverlay("labels"),
-    "/": () => document.querySelector<HTMLInputElement>(".searchbox input")?.focus(),
-    Escape: () => {
-      (document.activeElement as HTMLElement | null)?.blur?.();
-      setSelectedName(null);
-      setSelectedSky(null);
-    },
-  });
-
-  // -------------------
-  // UI
-  // -------------------
-  return (
-    <div className={`app${selectedPos ? " app--selected" : ""}`}>
-      {/* HEADER */}
-      <header className="app-header">
-        <div className="app-header__top">
-          <h2 className="brand">🛰 Satellite Tracker</h2>
-          <UtcClock nowMs={nowMs} travelAtMs={travelAt} stale={stale} />
-
-          <div className="searchbox">
-            <span aria-hidden="true">🔍</span>
-            <input
-              type="search"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search satellite (ISS, ZACUBE...)"
-              aria-label="Search satellites"
-            />
-          </div>
-
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={requestLocation}
-            aria-label={location ? "Update my location" : "Use my location"}
-          >
-            <span aria-hidden="true">📍</span>
-            <span className="btn-label">{location ? "Update My Location" : "Use My Location"}</span>
-          </button>
-        </div>
-
+  const headerControls = (
         <div className="app-header__row">
           {!wide && <GroupChips groups={chipGroups} active={group} onChange={setGroup} />}
           <span className="shown-note shown-note--count" aria-live="polite">
@@ -426,6 +376,63 @@ export default function SatelliteMap() {
             </span>
           )}
         </div>
+  );
+
+  // Keyboard shortcuts (wide screens; they do nothing while typing in a field)
+  useShortcuts({
+    s: () => {
+      const i = MAP_STYLES.findIndex(m => m.id === mapStyleId);
+      changeMapStyle(MAP_STYLES[(i + 1) % MAP_STYLES.length].id);
+    },
+    d: () => toggleOverlay("night"),
+    t: () => toggleOverlay("track"),
+    f: () => toggleOverlay("footprint"),
+    o: () => toggleOverlay("range"),
+    l: () => toggleOverlay("labels"),
+    "/": () => document.querySelector<HTMLInputElement>(".searchbox input")?.focus(),
+    Escape: () => {
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      setSelectedName(null);
+      setSelectedSky(null);
+    },
+  });
+
+  // -------------------
+  // UI
+  // -------------------
+  return (
+    <div className={`app${selectedPos ? " app--selected" : ""}`}>
+      {/* HEADER */}
+      <header className="app-header">
+        <div className="app-header__top">
+          <h2 className="brand">🛰 Satellite Tracker</h2>
+          {!wide && <UtcClock nowMs={nowMs} travelAtMs={travelAt} stale={stale} />}
+
+          <div className="searchbox">
+            <span aria-hidden="true">🔍</span>
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search satellite (ISS, ZACUBE...)"
+              aria-label="Search satellites"
+            />
+          </div>
+
+          {wide && headerControls}
+
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={requestLocation}
+            aria-label={location ? "Update my location" : "Use my location"}
+          >
+            <span aria-hidden="true">📍</span>
+            <span className="btn-label">{location ? "Update My Location" : "Use My Location"}</span>
+          </button>
+        </div>
+
+        {!wide && headerControls}
       </header>
 
       <div className="map-area">
@@ -440,6 +447,7 @@ export default function SatelliteMap() {
           />
           {overlays.night && <NightShade timeMs={travelAt ?? nowMs} style={mapStyle.id} />}
           <ResizeWatcher />
+          {wide && <MapCursor />}
           <FlyToGroup group={group} />
           <MapClicks onClick={() => setSelectedName(null)} />
 
@@ -466,7 +474,7 @@ export default function SatelliteMap() {
           {/* Observer */}
           {!timeTravelling && wide && overlays.labels && overlays.sky && <SkyLabels sats={mapSats} skip={selectedPos?.name ?? null} onSelect={n => { setSelectedSky(n); setSelectedName(n); }} />}
 
-          {location && <ObserverMarker lat={location.lat} lon={location.lon} />}
+          {location && <ObserverMarker lat={location.lat} lon={location.lon} showRange={overlays.range} />}
 
           {selectedPos && (
             <SelectedSatMarker
@@ -678,20 +686,17 @@ export default function SatelliteMap() {
         })()}
       </div>
 
-      {cardRow && visibility.data && !timeTravelling && (
-        <BottomCards
-          sats={liveSats}
-          passes={visibility.data.next_passes}
+      {wide && (
+        <StatusBar
           nowMs={nowMs}
-          selected={selectedSky ?? selectedName}
-          onSelect={name => {
-            setSelectedSky(name);
-            setSelectedName(name);
-          }}
-          onViewAll={tab => {
-            setSkyTab(tab);
-            setSelectedName(null);
-          }}
+          travelAtMs={travelAt}
+          tracked={groups.find(g => g.id === "all")?.count ?? null}
+          shown={livePositions.length}
+          above={visibility.data ? liveSats.length : null}
+          selected={selectedPos}
+          dataAgeS={visibility.receivedAt ? visibilityElapsed : null}
+          stale={stale}
+          error={error}
         />
       )}
     </div>

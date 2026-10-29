@@ -1,0 +1,77 @@
+.statusbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px 16px;
+  height: 30px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  background: #0b0f1a;
+  border-top: 1px solid #1d2438;
+  color: #a9b8dc;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.statusbar b,
+.statusbar__time strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.statusbar__time,
+.statusbar__cursor,
+.statusbar b,
+.statusbar__sel {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.statusbar__cursor {
+  min-width: 15ch;
+}
+
+.statusbar__sep {
+  width: 1px;
+  height: 14px;
+  background: #2a3350;
+}
+
+.statusbar__grow {
+  flex: 1;
+}
+
+.statusbar__tag {
+  margin-right: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #3b2f0a;
+  color: #fde68a;
+  font-family: system-ui, sans-serif;
+}
+
+.statusbar__sel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #e6ecff;
+}
+
+.statusbar__health {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #c3d0f0;
+}
+
+.statusbar__led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+/* wide screens: the filter/limit controls sit in the header's single row */
+.app-header__top > .app-header__row {
+  margin: 0 0 0 auto;
+  flex-wrap: nowrap;
+}

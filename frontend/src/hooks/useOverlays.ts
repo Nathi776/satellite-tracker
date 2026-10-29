@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-export type OverlayId = "track" | "night" | "footprint" | "labels" | "sky";
+export type OverlayId = "track" | "night" | "footprint" | "labels" | "sky" | "range";
 
 const KEY = "satellite-tracker:overlays";
 const DEFAULTS: Record<OverlayId, boolean> = {
@@ -9,6 +9,7 @@ const DEFAULTS: Record<OverlayId, boolean> = {
   footprint: true,
   labels: true,
   sky: true,
+  range: true,
 };
 
 function load(): Record<OverlayId, boolean> {
