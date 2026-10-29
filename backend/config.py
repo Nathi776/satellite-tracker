@@ -90,6 +90,10 @@ ALLOWED_ORIGINS = [
     o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",") if o.strip()
 ]
 
+# Requests per minute allowed from one client address (0 = no limit). See backend/ratelimit.py.
+RATE_LIMIT_PER_MINUTE = float(os.getenv("RATE_LIMIT_PER_MINUTE", "600"))
+RATE_LIMIT_TRUST_FORWARDED = os.getenv("RATE_LIMIT_TRUST_FORWARDED", "0") not in ("0", "false", "False", "")
+
 # How long a computed /observer/visibility answer is reused (seconds).
 VISIBILITY_CACHE_SECONDS = float(os.getenv("VISIBILITY_CACHE_SECONDS", "5"))
 

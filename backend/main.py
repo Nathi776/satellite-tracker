@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
 from backend import config
+from backend.ratelimit import RateLimitMiddleware
 from backend.satellites.african import AFRICAN_SATELLITES
 from backend.services import africa
 from backend.services import satellites as catalog
@@ -41,6 +42,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="African Satellite Tracker", lifespan=lifespan)
+
+# Added before CORS so that CORS wraps it: a 429 still carries the CORS headers the browser needs.
+app.add_middleware(RateLimitMiddleware)
 
 # "*" together with credentials is rejected by browsers, and this API uses no cookies.
 app.add_middleware(
@@ -115,7 +119,7 @@ def get_groups():
 @app.get("/positions")
 def get_positions(
     search: str = Query(None, description="Case-insensitive name filter"),
-    group: str = Query(None, description="Only this group (see /groups); 'all' or empty = every group"),
+    group: str = Query(None, description="Only this group (see /groups), or several separated by commas ('stations,weather'); 'all' or empty = every group"),
     limit: int = Query(100, ge=1, le=2000),
     at: datetime = Query(None, description="Show positions at this ISO time instead of now"),
     names: list[str] = Query(None, description="Exact satellite names (repeat the parameter); overrides search, group and limit"),
@@ -128,15 +132,17 @@ def get_positions(
     """
     t = _resolve_time(at)
     known_groups = {g["id"] for g in catalog.group_summary()} | {"all"}
-    if group and group not in known_groups:
-        raise HTTPException(status_code=422, detail=f"Unknown group '{group}'")
+    wanted_groups = catalog.group_ids(group)
+    for gid in wanted_groups:
+        if gid not in known_groups:
+            raise HTTPException(status_code=422, detail=f"Unknown group '{gid}'")
 
     has_search = bool(search and search.strip())
     if names:
         catalogue = catalog.get_satellites()
         sats = [catalogue[n] for n in dict.fromkeys(names) if n in catalogue][:2000]
-    elif has_search or (group and group != "all"):
-        sats = catalog.select(search if has_search else None, group, limit=limit)
+    elif has_search or wanted_groups:
+        sats = catalog.select(search if has_search else None, wanted_groups, limit=limit)
     else:
         priority = catalog.match_prefixes(config.PASS_WATCHLIST)
         seen = {s.name for s in priority}

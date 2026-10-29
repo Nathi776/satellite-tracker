@@ -143,7 +143,19 @@ export default function SatelliteMap() {
   // Wait until the user stops typing before hitting the API.
   const debouncedSearch = useDebounce(search.trim(), 350);
 
-  const [group, setGroup] = useState("all");
+  // Which satellite groups are shown; empty means all of them. "favourites" is a filter of our
+  // own and stands alone (the server is just given the exact names).
+  const [picked, setPicked] = useState<string[]>([]);
+  const group = picked.length ? picked.join(",") : "all";
+  const favMode = picked.includes("favourites");
+  const toggleGroup = useCallback((id: string) => {
+    setPicked(prev => {
+      if (id === "favourites") return prev.includes(id) ? [] : [id];
+      const rest = prev.filter(g => g !== "favourites");
+      return rest.includes(id) ? rest.filter(g => g !== id) : [...rest, id];
+    });
+  }, []);
+  const showAllGroups = useCallback(() => setPicked([]), []);
   const [limit, setLimit] = useState(300);
   const [selectedName, setSelectedName] = useState<string | null>(null); // map dot
   const [selectedSky, setSelectedSky] = useState<string | null>(null); // radar / list
@@ -194,22 +206,22 @@ export default function SatelliteMap() {
       ? [...groups, { id: "favourites", label: "★ Favourites", count: favourites.length }]
       : groups;
   useEffect(() => {
-    if (group === "favourites" && favourites.length === 0) setGroup("all");
-  }, [group, favourites.length]);
+    if (favMode && favourites.length === 0) setPicked([]);
+  }, [favMode, favourites.length]);
 
   const positionsFetcher = useCallback(
     (signal: AbortSignal) =>
       fetchPositions(
         {
           search: debouncedSearch,
-          group: group === "favourites" ? "all" : group,
-          names: group === "favourites" && !debouncedSearch ? favourites : undefined,
+          group: favMode ? "all" : group,
+          names: favMode && !debouncedSearch ? favourites : undefined,
           limit,
           at: travelAt,
         },
         signal,
       ),
-    [debouncedSearch, group, favourites, limit, travelAt],
+    [debouncedSearch, group, favMode, favourites, limit, travelAt],
   );
   const positions = usePolling(
     positionsFetcher,
@@ -350,7 +362,10 @@ export default function SatelliteMap() {
   );
 
   // How many are on the map, out of how many there are in this group
-  const groupTotal = groups.find(g => g.id === group)?.count;
+  const groupTotal =
+    picked.length === 0
+      ? groups.find(g => g.id === "all")?.count
+      : picked.reduce((sum, id) => sum + (chipGroups.find(g => g.id === id)?.count ?? 0), 0);
   const shownNote = debouncedSearch
     ? `${livePositions.length} match${livePositions.length === 1 ? "" : "es"}`
     : groupTotal !== undefined && groupTotal > livePositions.length
@@ -362,7 +377,12 @@ export default function SatelliteMap() {
           {!dock && (
             <button type="button" className="layers-btn" onClick={() => setLayersOpen(true)}>
               <span aria-hidden="true">◫</span> Layers
-              {group !== "all" && <small>· {groupLabel(group) ?? group}</small>}
+              {picked.length > 0 && (
+                <small>
+                  · {chipGroups.find(g => g.id === picked[0])?.label ?? picked[0]}
+                  {picked.length > 1 ? ` +${picked.length - 1}` : ""}
+                </small>
+              )}
             </button>
           )}
           <span className="shown-note shown-note--count" aria-live="polite">
@@ -456,7 +476,7 @@ export default function SatelliteMap() {
           {overlays.night && <NightShade timeMs={travelAt ?? nowMs} style={mapStyle.id} />}
           <ResizeWatcher />
           {wide && <MapCursor />}
-          <FlyToGroup group={group} />
+          <FlyToGroup group={picked.length === 1 ? picked[0] : ""} />
           <MapClicks onClick={() => setSelectedName(null)} />
 
           {/* What the selected satellite can see */}
@@ -613,8 +633,9 @@ export default function SatelliteMap() {
               <div className="left-stack left-stack--wide">
                 {dock && <LayersPanel
                   groups={chipGroups}
-                  group={group}
-                  onGroupChange={setGroup}
+                  selected={picked}
+                  onToggleGroup={toggleGroup}
+                  onShowAllGroups={showAllGroups}
                   overlays={overlays}
                   onToggleOverlay={toggleOverlay}
                   onReset={resetOverlays}
@@ -700,8 +721,9 @@ export default function SatelliteMap() {
           <LayersPanel
             variant="sheet"
             groups={chipGroups}
-            group={group}
-            onGroupChange={setGroup}
+            selected={picked}
+            onToggleGroup={toggleGroup}
+            onShowAllGroups={showAllGroups}
             overlays={overlays}
             onToggleOverlay={toggleOverlay}
             onReset={resetOverlays}
