@@ -15,6 +15,10 @@ CELESTRAK_URL = os.getenv(
 TLE_TTL_SECONDS = int(os.getenv("TLE_TTL_SECONDS", str(6 * 3600)))
 TLE_FETCH_TIMEOUT = int(os.getenv("TLE_FETCH_TIMEOUT", "20"))
 
+# Download new orbit data (and rebuild the catalogue) in a background thread, so that no request
+# has to wait for it. Set to 0 to fall back to refreshing on the first request after the TTL.
+REFRESH_IN_BACKGROUND = os.getenv("REFRESH_IN_BACKGROUND", "1") not in ("0", "false", "False", "")
+
 # Last good download is stored here so the API still starts when CelesTrak is down.
 TLE_CACHE_PATH = Path(os.getenv("TLE_CACHE_PATH", BASE_DIR / "data" / "tle_cache.json"))
 

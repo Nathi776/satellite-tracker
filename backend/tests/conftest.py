@@ -19,6 +19,9 @@ def offline_tles(monkeypatch, tmp_path, tle_text):
     """Every test runs offline: 'downloads' return the fixture and the disk cache is a temp file."""
     monkeypatch.setattr(config, "TLE_CACHE_PATH", tmp_path / "tle_cache.json")
     monkeypatch.setattr(tle_service, "_download", lambda: tle_text)
+    # The background thread is tested on its own (test_refresher.py); everything else
+    # keeps the simple "first request loads the data" behaviour.
+    monkeypatch.setattr(config, "REFRESH_IN_BACKGROUND", False)
     tle_service.reset_for_tests()
     catalog._cache.update(version=None, snapshot=({}, [], {}))
     yield

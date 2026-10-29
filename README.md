@@ -42,7 +42,7 @@ The tests run offline against a TLE fixture, so they don't need internet access.
 
 | Endpoint | What it returns |
 |---|---|
-| `GET /health` | Status and how fresh the TLE data is |
+| `GET /health` | Status, how fresh the TLE data is, and the state of the background refresh |
 | `GET /groups` | Catalog groups (Stations, Africa, Weather, Navigation, Starlink, OneWeb, Comms, Other) with counts |
 | `GET /positions?search=&group=&limit=&at=&names=` | Position, altitude, speed, period and footprint radius of matching satellites. `group` filters before `limit` (max 2000); `at` (ISO time, naive = UTC) shows any moment within ±48 h, else `422`. `names` (repeat it) fetches exactly those satellites and ignores the other filters; the Favourites filter uses it |
 | `GET /africa` | African satellites by country with their current position, plus `unmatched`: name-table entries that match nothing in today's catalog |
@@ -81,6 +81,47 @@ area from which the satellite is above the horizon.
 - **Selected satellite:** tap one and (with your location set) the card shows where to look (azimuth, elevation, distance), whether you can see it, and its next pass. It is live-only, so it is replaced by a note while you time-travel. Orbit facts sit under "Orbit details".
 - **UTC clock:** live, offline or time-travel status with the date and time in UTC.
 
+## Performance
+
+`python -m backend.tools.benchmark` times the API against a synthetic catalogue of about 16,000
+satellites (the size of CelesTrak's "active" group; add `--profile` to see where the time goes,
+`-n 5000` for a smaller one). Measured on a 2-core sandbox:
+
+| What | Before | After |
+|---|---|---|
+| Your sky, nobody has asked recently (`/observer/visibility`) | 2.4 s | 0.5 s |
+| Same, within the 5-second cache | 30 ms | 30 ms |
+| Every satellite above the horizon (the heavy part) | 2.3 s | 0.4 s |
+| `/positions?limit=300` | 0.2 s | 0.2 s |
+| `/positions?limit=2000` | 1.1 s | 1.1 s |
+| Building the catalogue (once per TLE download, every 6 h) | 3.1 s | 3.1 s |
+
+How: `services/prefilter.py` runs SGP4 for the whole catalogue at once and finds the roughly 5%
+that can be above the horizon; the exact Skyfield calculation then runs only on those. The Sun's
+position is looked up once per request instead of once per satellite. Results are identical to the
+exact path (tests compare them for five observers, including near the pole, and check that no
+satellite above the horizon is ever dropped).
+
+Each browser asks for its sky every 5 seconds, and one request holds a CPU core for about half a
+second, so budget roughly ten simultaneous people in *different* places per core (people within
+about 1 km share one cached answer). The remaining big cost is `/positions` with a high limit.
+
+**Refreshing the orbit data no longer stalls requests.** A background thread downloads new TLEs
+when they pass their TTL, builds the new catalogue (and the vectorised SGP4 array) next to the old
+one, and swaps it in as one step; requests keep using the old data until then. Failures keep the
+old data and are retried after 1, 2, 4 ... up to 30 minutes; `/health` shows the last error, whether
+a refresh is running and when the next one is due. On startup the saved disk copy is used straight
+away while a fresh download happens in the background. `python -m backend.tools.refresh_stall`
+measures it (16,000 synthetic satellites, requests running throughout a refresh):
+
+| | Slowest request during a refresh |
+|---|---|
+| Before (first request after the download rebuilds the catalogue) | 4.5 s |
+| After (background refresh) | 0.8 s |
+
+The remaining 0.8 s is CPU sharing with the build (the cached sky answer is recomputed every 5 s
+while the build runs), not waiting on a lock.
+
 ## How the data works
 
 TLEs are downloaded from CelesTrak, cached in memory, and saved to
@@ -114,6 +155,7 @@ with a newer copy any time.
 | Variable | Default | Purpose |
 |---|---|---|
 | `TLE_TTL_SECONDS` | `21600` | How long TLEs are reused before refreshing |
+| `REFRESH_IN_BACKGROUND` | `1` | Refresh the orbit data in a background thread (`0`: the first request after the TTL does it) |
 | `ALLOWED_ORIGINS` | `*` | Comma-separated CORS origins. Set this when you deploy |
 | `VISIBILITY_CACHE_SECONDS` | `5` | How long a visibility result is reused |
 | `CELESTRAK_URL` | active satellites | TLE source |

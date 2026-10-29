@@ -58,17 +58,61 @@ def is_dark_enough(sun_alt):
 # ---------------------------------------------------------------------------
 # Satellite illumination
 # ---------------------------------------------------------------------------
+_EARTH_RADIUS_M = 6378136.6  # Skyfield's ERAD: the radius used for the shadow test
+_sun_memo = (None, None)  # (time key, (geometric Sun vector in m, apparent Sun vector in km))
+
+
+def _sun_vectors(t):
+    """The Sun's position at one moment, worked out once however many satellites ask.
+
+    Looking it up in the ephemeris costs about 50 us per call, which added up to a large part of
+    a whole-catalogue calculation. Returns (geometric vector from Earth in metres,
+    light-time-corrected vector in km).
+    """
+    global _sun_memo
+    single = np.ndim(t.tt) == 0  # an array of times (pass prediction) is not memoised
+    key = float(t.tt) if single else None
+    if single:
+        memo_key, memo_value = _sun_memo
+        if memo_key == key:
+            return memo_value
+    eph = get_ephemeris()
+    value = (
+        np.asarray((eph["sun"] - eph["earth"]).at(t).xyz.m),
+        np.asarray(eph["earth"].at(t).observe(eph["sun"]).position.km),
+    )
+    if single:
+        _sun_memo = (key, value)
+    return value
+
+
+def is_sunlit_geocentric(geocentric, t):
+    """True where a satellite (a Skyfield geocentric position at time `t`) is in sunlight.
+
+    Same test as Skyfield's `is_sunlit`: the satellite is in shadow when the line from it to the
+    Sun passes through the Earth. Only the Sun lookup is shared between satellites.
+    """
+    sun = _sun_vectors(t)[0]
+    r = np.asarray(geocentric.xyz.m, dtype=float)
+    to_sun = sun - r
+    u = to_sun / np.linalg.norm(to_sun, axis=0)
+    b = (r * u).sum(axis=0)
+    c = (r * r).sum(axis=0) - _EARTH_RADIUS_M**2
+    # the forward ray hits the Earth when it points towards it (b < 0) and the discriminant allows
+    in_shadow = (b < 0) & (b * b - c >= 0)
+    return ~in_shadow
+
+
 def is_sunlit(satellite, t):
     """True where the satellite is in sunlight (not in Earth's shadow)."""
-    return np.asarray(satellite.at(t).is_sunlit(get_ephemeris()))
+    return np.asarray(is_sunlit_geocentric(satellite.at(t), t))
 
 
 def phase_angle_rad(satellite, observer, t):
     """Sun-satellite-observer angle in radians (0 = full, pi = new)."""
-    eph = get_ephemeris()
     sat_pos = satellite.at(t).position.km
     obs_pos = observer.at(t).position.km
-    sun_pos = eph["earth"].at(t).observe(eph["sun"]).position.km
+    sun_pos = _sun_vectors(t)[1]
 
     to_obs = obs_pos - sat_pos
     to_sun = sun_pos - sat_pos
