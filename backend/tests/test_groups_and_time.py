@@ -180,3 +180,40 @@ def test_groundtrack_starts_at_requested_time(client):
     first = client.get("/positions", params={"search": "iss (zarya)", "at": iso(at)}).json()[0]
     assert math.isclose(track[0]["lat"], first["lat"], abs_tol=0.01)
     assert math.isclose(track[0]["lon"], first["lon"], abs_tol=0.01)
+
+
+# ---- several groups at once -------------------------------------------------
+def test_group_ids_parsing():
+    assert catalog.group_ids(None) == []
+    assert catalog.group_ids("all") == []
+    assert catalog.group_ids("stations, weather,stations") == ["stations", "weather"]
+    assert catalog.group_ids(["stations", "all"]) == []
+
+
+def test_select_several_groups_is_the_union():
+    counts = {g["id"]: g["count"] for g in catalog.group_summary()}
+    two = [g for g in counts if counts[g] > 0 and g != "all"][:2]
+    assert len(two) == 2
+    union = catalog.select(group=two)
+    assert len(union) == counts[two[0]] + counts[two[1]]
+    assert {catalog.get_groups()[s.name] for s in union} == set(two)
+
+
+def test_fair_shares_do_not_let_one_group_take_everything():
+    shares = catalog._fair_shares({"big": 1800, "small": 12, "mid": 150}, 100)
+    assert shares["small"] == 12
+    assert sum(shares.values()) == 100
+    assert shares["mid"] == shares["big"] == 44
+
+
+def test_api_accepts_comma_separated_groups(client_factory=None):
+    from fastapi.testclient import TestClient
+    from backend.main import app
+
+    with TestClient(app) as c:
+        groups_seen = {g["id"] for g in c.get("/groups").json() if g["count"] > 0 and g["id"] != "all"}
+        pick = sorted(groups_seen)[:2]
+        r = c.get("/positions", params={"group": ",".join(pick), "limit": 2000})
+        assert r.status_code == 200
+        assert {s["group"] for s in r.json()} <= set(pick)
+        assert c.get("/positions", params={"group": f"{pick[0]},nonsense"}).status_code == 422
