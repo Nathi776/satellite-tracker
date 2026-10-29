@@ -11,7 +11,7 @@ from backend import config
 from backend.satellites.african import AFRICAN_SATELLITES
 from backend.services import africa
 from backend.services import satellites as catalog
-from backend.services import tle_service
+from backend.services import refresher, tle_service
 from backend.services.magnetic import declination_deg
 from backend.services.ics import passes_to_ics
 from backend.services.groundtrack import get_ground_track
@@ -30,18 +30,14 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(messag
 log = logging.getLogger("satellite-tracker")
 
 
-def _warm_up():
-    """Download TLEs and build the catalog in the background so the first request is fast."""
-    try:
-        catalog.get_satellites()
-    except Exception as exc:
-        log.warning("Startup warm-up failed (will retry on first request): %s", exc)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    threading.Thread(target=_warm_up, daemon=True).start()
+    # One background thread downloads new orbit data and rebuilds the catalogue off to the
+    # side, so no request has to wait for either. REFRESH_IN_BACKGROUND=0 turns it off.
+    if config.REFRESH_IN_BACKGROUND:
+        refresher.start()
     yield
+    refresher.stop()
 
 
 app = FastAPI(title="African Satellite Tracker", lifespan=lifespan)

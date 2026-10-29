@@ -16,8 +16,6 @@ import threading
 import numpy as np
 from sgp4.api import SatrecArray
 
-from backend.services import tle_service
-
 DEFAULT_MARGIN_DEG = 1.5
 
 _lock = threading.Lock()
@@ -26,12 +24,17 @@ _cache = {"key": None, "array": None}
 
 def _satrec_array(satellites):
     """SatrecArray for this satellite list, kept until the catalogue changes."""
-    key = (tle_service.get_version(), len(satellites), id(satellites[0]), id(satellites[-1]))
+    key = (len(satellites), id(satellites[0]), id(satellites[-1]))
     with _lock:
         if _cache["key"] != key:
             _cache["array"] = SatrecArray([s.model for s in satellites])
             _cache["key"] = key
         return _cache["array"]
+
+
+def warm(satellites):
+    """Build the SatrecArray ahead of time (the refresher calls this before a swap)."""
+    _satrec_array(satellites)
 
 
 def above_horizon_mask(satellites, observer, now, margin_deg=DEFAULT_MARGIN_DEG):

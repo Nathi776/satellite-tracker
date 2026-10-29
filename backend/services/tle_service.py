@@ -5,6 +5,8 @@ Behaviour:
   * every successful download is also written to disk
   * if a refresh fails we keep serving the stale in-memory data, and if there is
     nothing in memory we fall back to the last copy saved on disk
+  * with the background refresher running (services/refresher.py) requests never download:
+    they use whatever is in memory, and the refresher swaps in new data when it is ready
 """
 import json
 import logging
@@ -25,7 +27,11 @@ _state = {
     "source": None,        # "network" | "disk"
     "version": 0,          # bumped whenever data changes (lets other caches invalidate)
     "last_failure": None,  # time.monotonic() of the last failed refresh
+    "background": False,   # True while the background refresher owns the downloads
+    "refreshing": False,   # a background download is in progress right now
+    "last_error": None,    # message of the last failed background refresh
 }
+_ready = threading.Event()  # set once any data is in memory
 
 # After a failed refresh, don't hammer CelesTrak (or block requests on its
 # timeout) again for this many seconds.
@@ -117,6 +123,45 @@ def _install(data: dict, fetched_at: datetime, source: str) -> None:
     _state["last_updated"] = fetched_at
     _state["source"] = source
     _state["version"] += 1
+    _ready.set()
+
+
+def set_background(on: bool) -> None:
+    """Tell get_tles() whether a background refresher is keeping the data fresh."""
+    with _lock:
+        _state["background"] = on
+
+
+def load_cached() -> bool:
+    """Put the last copy saved on disk into memory (no network). False if there is none."""
+    cached = _load_from_disk()
+    if not cached:
+        return False
+    data, fetched_at = cached
+    with _lock:
+        if not _state["data"]:
+            _install(data, fetched_at, "disk")
+    return True
+
+
+def refresh_in_background() -> dict:
+    """Download fresh TLEs without holding the lock; requests keep using the old data meanwhile."""
+    _state["refreshing"] = True
+    try:
+        data = fetch_tles()
+        _state["last_error"] = None
+        return data
+    except Exception as exc:
+        _state["last_error"] = f"{type(exc).__name__}: {exc}"
+        raise
+    finally:
+        _state["refreshing"] = False
+
+
+def seconds_until_stale():
+    """Seconds until the data passes its TTL (0 when already stale, None with no data)."""
+    age = _age_seconds()
+    return None if age is None else max(0.0, config.TLE_TTL_SECONDS - age)
 
 
 def fetch_tles() -> dict:
@@ -145,7 +190,16 @@ def _age_seconds():
 
 
 def get_tles(force_refresh: bool = False) -> dict:
-    """Return the TLE dict, refreshing it when it is older than the TTL."""
+    """Return the TLE dict, refreshing it when it is older than the TTL.
+
+    While the background refresher runs, data that is already in memory is returned as it
+    is, however old: the refresher is responsible for replacing it."""
+    if _state["background"] and not force_refresh:
+        if not _state["data"]:
+            # first start: give the refresher a moment to load the disk copy or download
+            _ready.wait(config.TLE_FETCH_TIMEOUT + 5)
+        if _state["data"]:
+            return _state["data"]
     with _lock:
         age = _age_seconds()
         fresh = age is not None and age < config.TLE_TTL_SECONDS
@@ -195,6 +249,12 @@ def get_tle_status() -> dict:
             "last_updated": updated.isoformat() if updated else None,
             "age_seconds": round(age) if age is not None else None,
             "ttl_seconds": config.TLE_TTL_SECONDS,
+            "background_refresh": _state["background"],
+            "refreshing": _state["refreshing"],
+            "next_refresh_in_seconds": (
+                round(seconds_until_stale()) if _state["background"] and age is not None else None
+            ),
+            "last_error": _state["last_error"],
         }
 
 
@@ -209,5 +269,9 @@ def reset_for_tests() -> None:
             last_updated=None,
             source=None,
             last_failure=None,
+            background=False,
+            refreshing=False,
+            last_error=None,
             version=_state["version"] + 1,
         )
+        _ready.clear()

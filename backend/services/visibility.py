@@ -320,7 +320,7 @@ def compute_visibility_cached(lat: float, lon: float, elevation_m: float = 0.0,
     # Load (or refresh) the catalog first: that can change the data version, and the
     # key must use the version the result will actually be computed from.
     catalog.get_satellites()
-    key = (round(lat, 2), round(lon, 2), round(elevation_m), hours, tle_service.get_version())
+    key = (round(lat, 2), round(lon, 2), round(elevation_m), hours, catalog.get_version())
     now = time.monotonic()
 
     with _cache_lock:
