@@ -1,0 +1,236 @@
+/* Left column on wide screens: the layers panel above the time control. */
+.left-stack--wide {
+  top: 96px;
+  bottom: 34px;
+  justify-content: flex-end;
+  width: 268px;
+}
+
+.layers {
+  color-scheme: dark;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  background: rgba(14, 16, 22, 0.94);
+  color: #e8ecf4;
+  border: 1px solid #262b38;
+  border-radius: 12px;
+  padding: 10px 14px 12px;
+  font-size: 13px;
+  box-sizing: border-box;
+  backdrop-filter: blur(6px);
+}
+
+.layers__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.layers__link {
+  background: none;
+  border: 0;
+  color: #8fb0ff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.layers__group {
+  margin: 10px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #a9b8dc;
+}
+
+.layers__row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 28px;
+  cursor: pointer;
+}
+
+.layers__row input {
+  margin: 0;
+  width: 15px;
+  height: 15px;
+  accent-color: #5b8cff;
+}
+
+.layers__row input:disabled + .layers__label {
+  opacity: 0.5;
+}
+
+.layers__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.layers__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.layers__n {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: #a9b8dc;
+}
+
+.layers kbd {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: #c9d6f5;
+  border: 1px solid rgba(140, 165, 230, 0.4);
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.layers__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(120, 150, 220, 0.2);
+  color: #a9b8dc;
+  font-size: 12px;
+}
+
+/* ---- phone: the same panel as a sheet over the map ---- */
+.layers-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.layers-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(3, 6, 15, 0.55);
+  cursor: pointer;
+}
+
+.layers-sheet__body {
+  position: relative;
+  max-height: 86dvh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px 18px 0 0;
+  overflow: hidden;
+  animation: layers-up 0.22s ease-out;
+}
+
+@keyframes layers-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layers-sheet__body {
+    animation: none;
+  }
+}
+
+.layers--sheet {
+  border-radius: 18px 18px 0 0;
+  border-width: 1px 0 0;
+  background: #0b1120;
+  padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+  font-size: 15px;
+}
+
+.layers--sheet .layers__head {
+  font-size: 18px;
+}
+
+.layers--sheet .layers__head span {
+  display: flex;
+  gap: 4px;
+}
+
+.layers--sheet .layers__link {
+  min-height: 44px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.layers--sheet .layers__row {
+  min-height: 44px;
+  gap: 12px;
+}
+
+.layers--sheet .layers__row input[type="checkbox"],
+.layers--sheet .layers__row input[type="radio"] {
+  width: 20px;
+  height: 20px;
+}
+
+.layers--sheet .layers__dot {
+  width: 10px;
+  height: 10px;
+}
+
+.layers__seg {
+  display: flex;
+  margin-top: 4px;
+  border: 1px solid rgba(140, 165, 230, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.layers__seg button {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: #c3d0f0;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.layers__seg button[aria-pressed="true"] {
+  background: #2d4a9e;
+  color: #fff;
+}
+
+.layers__limit select {
+  padding: 8px 10px;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid #25304a;
+  background: #0f172a;
+  color: #e8ecf4;
+  font: inherit;
+}
+
+.layers-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #25304a;
+  background: #0f172a;
+  color: #e8ecf4;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
