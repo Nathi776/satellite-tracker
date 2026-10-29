@@ -21,6 +21,9 @@ import { useFavourites } from "../hooks/useFavourites";
 import SkyPanel, { type SkyTab } from "./SkyPanel";
 import SatelliteLayer from "./SatelliteLayer";
 import GroupChips from "./GroupChips";
+import LayersPanel from "./LayersPanel";
+import { useOverlays } from "../hooks/useOverlays";
+import { useShortcuts } from "../hooks/useShortcuts";
 import TimeControl from "./TimeControl";
 import NightShade from "./NightShade";
 import ObserverMarker from "./ObserverMarker";
@@ -158,6 +161,7 @@ export default function SatelliteMap() {
     setMapStyleId(id);
     saveMapStyle(id);
   }, []);
+  const { overlays, toggle: toggleOverlay, reset: resetOverlays } = useOverlays();
 
   // Time travel: offsetMin is what the slider shows; atMs is the moment it means. The
   // moment is fixed when the slider moves (in the event handler), so it doesn't creep forward.
@@ -350,6 +354,24 @@ export default function SatelliteMap() {
       ? `Showing ${livePositions.length.toLocaleString()} of ${groupTotal.toLocaleString()}`
       : `${livePositions.length.toLocaleString()} shown`;
 
+  // Keyboard shortcuts (wide screens; they do nothing while typing in a field)
+  useShortcuts({
+    s: () => {
+      const i = MAP_STYLES.findIndex(m => m.id === mapStyleId);
+      changeMapStyle(MAP_STYLES[(i + 1) % MAP_STYLES.length].id);
+    },
+    d: () => toggleOverlay("night"),
+    t: () => toggleOverlay("track"),
+    f: () => toggleOverlay("footprint"),
+    l: () => toggleOverlay("labels"),
+    "/": () => document.querySelector<HTMLInputElement>(".searchbox input")?.focus(),
+    Escape: () => {
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      setSelectedName(null);
+      setSelectedSky(null);
+    },
+  });
+
   // -------------------
   // UI
   // -------------------
@@ -384,7 +406,7 @@ export default function SatelliteMap() {
         </div>
 
         <div className="app-header__row">
-          <GroupChips groups={chipGroups} active={group} onChange={setGroup} />
+          {!wide && <GroupChips groups={chipGroups} active={group} onChange={setGroup} />}
           <span className="shown-note shown-note--count" aria-live="polite">
             {shownNote}
           </span>
@@ -416,13 +438,13 @@ export default function SatelliteMap() {
             subdomains={mapStyle.subdomains ?? "abc"}
             maxZoom={mapStyle.maxZoom}
           />
-          <NightShade timeMs={travelAt ?? nowMs} style={mapStyle.id} />
+          {overlays.night && <NightShade timeMs={travelAt ?? nowMs} style={mapStyle.id} />}
           <ResizeWatcher />
           <FlyToGroup group={group} />
           <MapClicks onClick={() => setSelectedName(null)} />
 
           {/* What the selected satellite can see */}
-          {footprint.length > 0 && selectedPos && (
+          {overlays.footprint && footprint.length > 0 && selectedPos && (
             <Polygon
               positions={footprint}
               pathOptions={{
@@ -442,7 +464,7 @@ export default function SatelliteMap() {
           />
 
           {/* Observer */}
-          {!timeTravelling && wide && <SkyLabels sats={mapSats} skip={selectedPos?.name ?? null} onSelect={n => { setSelectedSky(n); setSelectedName(n); }} />}
+          {!timeTravelling && wide && overlays.labels && overlays.sky && <SkyLabels sats={mapSats} skip={selectedPos?.name ?? null} onSelect={n => { setSelectedSky(n); setSelectedName(n); }} />}
 
           {location && <ObserverMarker lat={location.lat} lon={location.lon} />}
 
@@ -456,7 +478,7 @@ export default function SatelliteMap() {
           )}
 
           {/* Satellites above your horizon, coloured by visibility */}
-          {mapSats.map(sat => (
+          {(overlays.sky ? mapSats : []).map(sat => (
             <Marker
               key={`sky-${sat.name}`}
               position={[sat.lat, sat.lon]}
@@ -486,14 +508,14 @@ export default function SatelliteMap() {
           ))}
 
           {/* Orbit: where it has been (dashed, faint) and where it is going (solid) */}
-          {(showTrack || !selectedPos) && splitTrack(pastPoints).map((seg, i) => (
+          {overlays.track && (showTrack || !selectedPos) && splitTrack(pastPoints).map((seg, i) => (
             <Polyline
               key={`past-${i}`}
               positions={seg as [number, number][]}
               pathOptions={{ color: "#5eead4", weight: 2, opacity: 0.55, dashArray: "3 7", interactive: false }}
             />
           ))}
-          {(showTrack || !selectedPos) && splitTrack(trackPoints).map((seg, i) => (
+          {overlays.track && (showTrack || !selectedPos) && splitTrack(trackPoints).map((seg, i) => (
             <Polyline
               key={`future-${i}`}
               positions={seg as [number, number][]}
@@ -571,7 +593,21 @@ export default function SatelliteMap() {
                 {infoBlock}
                 {skyBlock}
               </div>
-              <div className="left-stack">{timeBlock}</div>
+              <div className="left-stack left-stack--wide">
+                <LayersPanel
+                  groups={chipGroups}
+                  group={group}
+                  onGroupChange={setGroup}
+                  overlays={overlays}
+                  onToggleOverlay={toggleOverlay}
+                  onReset={resetOverlays}
+                  nakedEyeOnly={nakedEyeOnly}
+                  onNakedEyeOnlyChange={setNakedEyeOnly}
+                  hasLocation={!!location}
+                  aboveCount={visibility.data ? liveSats.length : null}
+                />
+                {timeBlock}
+              </div>
             </>
           ) : (
             (() => {

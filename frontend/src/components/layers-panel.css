@@ -1,0 +1,107 @@
+/* Left column on wide screens: the layers panel above the time control. */
+.left-stack--wide {
+  top: 96px;
+  bottom: 34px;
+  justify-content: flex-end;
+  width: 268px;
+}
+
+.layers {
+  color-scheme: dark;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  background: rgba(14, 16, 22, 0.94);
+  color: #e8ecf4;
+  border: 1px solid #262b38;
+  border-radius: 12px;
+  padding: 10px 14px 12px;
+  font-size: 13px;
+  box-sizing: border-box;
+  backdrop-filter: blur(6px);
+}
+
+.layers__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.layers__link {
+  background: none;
+  border: 0;
+  color: #8fb0ff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.layers__group {
+  margin: 10px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #a9b8dc;
+}
+
+.layers__row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 28px;
+  cursor: pointer;
+}
+
+.layers__row input {
+  margin: 0;
+  width: 15px;
+  height: 15px;
+  accent-color: #5b8cff;
+}
+
+.layers__row input:disabled + .layers__label {
+  opacity: 0.5;
+}
+
+.layers__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.layers__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.layers__n {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: #a9b8dc;
+}
+
+.layers kbd {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: #c9d6f5;
+  border: 1px solid rgba(140, 165, 230, 0.4);
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.layers__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(120, 150, 220, 0.2);
+  color: #a9b8dc;
+  font-size: 12px;
+}
