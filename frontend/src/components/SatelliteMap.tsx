@@ -155,6 +155,8 @@ export default function SatelliteMap() {
   const [sheetTab, setSheetTab] = useState<"sat" | "sky">("sat");
   // desktop layout: layers on the left, detail card on the right, status bar under the map
   const wide = useMediaQuery("(min-width: 721px)");
+  // room for the layers panel beside the map; narrower windows use the Layers sheet
+  const dock = useMediaQuery("(min-width: 1000px)");
   const [mapStyleId, setMapStyleId] = useState<MapStyleId>(loadMapStyle);
   const mapStyle = MAP_STYLES.find(m => m.id === mapStyleId) ?? MAP_STYLES[0];
   const changeMapStyle = useCallback((id: MapStyleId) => {
@@ -357,7 +359,7 @@ export default function SatelliteMap() {
 
   const headerControls = (
         <div className="app-header__row">
-          {!wide && (
+          {!dock && (
             <button type="button" className="layers-btn" onClick={() => setLayersOpen(true)}>
               <span aria-hidden="true">◫</span> Layers
               {group !== "all" && <small>· {groupLabel(group) ?? group}</small>}
@@ -608,7 +610,7 @@ export default function SatelliteMap() {
                 {skyBlock}
               </div>
               <div className="left-stack left-stack--wide">
-                <LayersPanel
+                {dock && <LayersPanel
                   groups={chipGroups}
                   group={group}
                   onGroupChange={setGroup}
@@ -619,7 +621,7 @@ export default function SatelliteMap() {
                   onNakedEyeOnlyChange={setNakedEyeOnly}
                   hasLocation={!!location}
                   aboveCount={visibility.data ? liveSats.length : null}
-                />
+                />}
                 {timeBlock}
               </div>
             </>
@@ -692,7 +694,7 @@ export default function SatelliteMap() {
         })()}
       </div>
 
-      {!wide && (
+      {!dock && (
         <LayersSheet open={layersOpen} onClose={() => setLayersOpen(false)}>
           <LayersPanel
             variant="sheet"
