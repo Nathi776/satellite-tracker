@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(async ({ mode }) => {
   // `npm run dev:phone` serves the app over HTTPS on your network, with the API reached through
   // /api (see .env.phone). Phones only give web pages the compass and camera on secure pages.
-  if (mode !== 'phone') return { plugins: [react()] }
+  if (mode !== 'phone') return { plugins: [react()], build: { chunkSizeWarningLimit: 2200 } }
 
   const { default: basicSsl } = await import('@vitejs/plugin-basic-ssl')
   return {

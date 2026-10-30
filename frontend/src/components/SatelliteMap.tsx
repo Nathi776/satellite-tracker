@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -14,6 +14,9 @@ import L from "leaflet";
 import InfoPanel from "./InfoPanel";
 import { splitTrack } from "../utils/track";
 import StatusBar from "./StatusBar";
+import "./globe-view.css";
+// three.js is large: it is only downloaded when someone opens the globe
+const GlobeView = lazy(() => import("./GlobeView"));
 import MapCursor from "./MapCursor";
 import BottomSheet, { type Snap } from "./BottomSheet";
 import SkyLabels from "./SkyLabels";
@@ -177,6 +180,7 @@ export default function SatelliteMap() {
   }, []);
   const { overlays, toggle: toggleOverlay, reset: resetOverlays } = useOverlays();
   const [layersOpen, setLayersOpen] = useState(false);
+  const [view, setView] = useState<"map" | "globe">("map");
 
   // Time travel: offsetMin is what the slider shows; atMs is the moment it means. The
   // moment is fixed when the slider moves (in the event handler), so it doesn't creep forward.
@@ -463,9 +467,14 @@ export default function SatelliteMap() {
         {!wide && headerControls}
       </header>
 
-      <div className="map-area">
+      <div className={`map-area${view === "globe" ? " map-area--globe" : ""}`}>
         {/* MAP */}
-        <MapContainer center={[0, 0]} zoom={2} minZoom={2} className={mapStyle.dark ? "map--dark" : undefined}>
+        <MapContainer
+          center={[0, 0]}
+          zoom={2}
+          minZoom={2}
+          className={mapStyle.dark ? "map--dark" : undefined}
+        >
           <TileLayer
             key={mapStyle.id}
             attribution={mapStyle.attribution}
@@ -561,7 +570,29 @@ export default function SatelliteMap() {
           ))}
         </MapContainer>
 
-        <MapStyleSwitch value={mapStyleId} onChange={changeMapStyle} />
+        {view === "globe" && (
+          <Suspense fallback={<div className="globe-view" />}>
+            <GlobeView
+              sats={livePositions}
+              selectedName={selectedName}
+              onSelect={setSelectedName}
+              track={trackPoints as [number, number][]}
+              past={pastPoints as [number, number][]}
+              showTrack={overlays.track && showTrack}
+              observer={location}
+            />
+          </Suspense>
+        )}
+
+        <div className="view-switch" role="group" aria-label="View">
+          {(["map", "globe"] as const).map(v => (
+            <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}>
+              {v === "map" ? "Map" : "3D globe"}
+            </button>
+          ))}
+        </div>
+
+        {view === "map" && <MapStyleSwitch value={mapStyleId} onChange={changeMapStyle} />}
 
         {/* Your sky: outside the map so it isn't tied to Leaflet's layout */}
         {(() => {
