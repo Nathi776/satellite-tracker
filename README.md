@@ -78,6 +78,7 @@ area from which the satellite is above the horizon.
 - **Keyboard shortcuts** (wide screens, not while typing): `S` cycles the map style, `D` day/night, `T` ground track, `O` your range, `F` footprint, `L` labels, `/` focuses search, `Esc` clears the selection. Overlay choices are remembered in the browser.
 - **Satellite pages and favourites:** tap ☆ on a satellite to keep it as a favourite (remembered in this browser; a ★ Favourites filter appears in the header). "View details" opens `#/satellite/<name>`: a map with its orbit, where to look from you, live position and speed, orbit facts and its next five passes with reminders. The page can be bookmarked or shared as a link. Your location is remembered for the browser tab so the map and the page agree.
 - **Phones:** one bottom sheet holds the selected satellite and "Your sky". It rests low (a one-line summary), half-open or nearly full: drag the handle, or tap it to open and close. Picking a satellite opens it on that satellite, with a Satellite | Your sky switch. The rest: a compact header (search and a location button on one row, plus a **Layers** button that opens a sheet with the map style, satellite groups, overlays and the "show up to" limit), the time-travel slider folded into a small pill you tap to open, and the map credit in the top-left corner. Zoom is by pinch.
+- **3D globe:** the **Map | 3D globe** switch at the top of the map shows the same satellites on a rotating Earth, at their real heights (very high orbits are squeezed so GPS and geostationary satellites stay on screen). Drag to turn it, scroll to zoom, click a satellite to select it: the globe turns to it and draws its orbit (past dashed, future solid; the "Ground track" toggle applies). The same side panels and status bar stay. It uses three.js (via `react-globe.gl`), which is downloaded only when you first open the globe, and the Earth image is bundled in `frontend/public/globe/` (NASA imagery from the three-globe package, so no external requests). Not drawn on the globe yet: day/night shading and the footprint.
 - **Selected satellite:** tap one and (with your location set) the card shows where to look (azimuth, elevation, distance), whether you can see it, and its next pass. It is live-only, so it is replaced by a note while you time-travel. Orbit facts sit under "Orbit details".
 - **UTC clock:** live, offline or time-travel status with the date and time in UTC.
 
@@ -207,5 +208,5 @@ camera image.
 ## Roadmap
 
 - Marker clustering was skipped on purpose (it fights moving satellites; a canvas layer is used instead)
-- 3D globe, phone-orientation AR, pass alerts
+- Day/night shading and footprints on the 3D globe; pass alerts
 - Real per-satellite brightness (e.g. Starlink generations, tumbling rocket bodies) beyond the size-based estimate

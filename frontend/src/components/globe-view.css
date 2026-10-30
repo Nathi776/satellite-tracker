@@ -1,0 +1,67 @@
+.globe-view {
+  position: absolute;
+  inset: 0;
+  background: #02040a;
+  overflow: hidden;
+}
+
+.globe-view canvas {
+  outline: none;
+}
+
+.globe-tip {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(14, 16, 22, 0.95);
+  color: #e8ecf4;
+  font: 12px system-ui, sans-serif;
+}
+
+.view-switch {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 10px;
+  background: rgba(14, 16, 22, 0.92);
+  border: 1px solid #262b38;
+}
+
+.view-switch button {
+  min-height: 28px;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: #9aa4bb;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.view-switch button[aria-pressed="true"] {
+  background: #262b38;
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .view-switch {
+    left: 8px;
+    top: 8px;
+    transform: none;
+  }
+  .view-switch button {
+    min-height: 36px;
+  }
+}
+
+/* the flat map stays mounted (it keeps its zoom and position) but is hidden behind the globe */
+.map-area--globe .leaflet-container {
+  visibility: hidden;
+  pointer-events: none;
+}
