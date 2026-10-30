@@ -36,7 +36,7 @@ If the API is not on `http://127.0.0.1:8000`, copy `frontend/.env.example` to
 python -m pytest backend/tests
 ```
 
-The tests run offline against a TLE fixture, so they don't need internet access.
+The tests run offline against a TLE fixture, so they don't need internet access. GitHub Actions (`.github/workflows/ci.yml`) runs them on Python 3.12 and 3.13, plus the frontend type check, lint and build, on every pull request and push to `main`.
 
 ## API
 
