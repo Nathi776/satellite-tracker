@@ -106,6 +106,27 @@ export type VisibilityResponse = {
   next_passes: SatPass[];
 };
 
+/** POST helper with the same error handling as getJson. */
+export async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      detail = (await res.json()).detail ?? detail;
+    } catch {
+      /* body wasn't JSON */
+    }
+    throw new Error(`${res.status}: ${typeof detail === "string" ? detail : "invalid request"}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export const fetchPushKey = () => getJson<{ enabled: boolean; public_key: string | null }>("/push/key");
+
 export type TrackPoint = { lat: number; lon: number };
 
 /** GET helper that throws on HTTP errors (fetch alone only rejects on network failure). */

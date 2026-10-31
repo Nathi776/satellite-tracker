@@ -42,6 +42,7 @@ The tests run offline against a TLE fixture, so they don't need internet access.
 
 | Endpoint | What it returns |
 |---|---|
+| `GET /push/key`, `POST /push/subscribe`, `/push/unsubscribe`, `/push/test` | Pass alert subscriptions (see Pass alerts) |
 | `GET /health` | Status, how fresh the TLE data is, and the state of the background refresh |
 | `GET /groups` | Catalog groups (Stations, Africa, Weather, Navigation, Starlink, OneWeb, Comms, Other) with counts |
 | `GET /positions?search=&group=&limit=&at=&names=` | Position, altitude, speed, period and footprint radius of matching satellites. `group` filters before `limit` (max 2000) and takes one id or several separated by commas (`stations,weather`); with several, the limit is shared fairly so a big group cannot fill every slot; `at` (ISO time, naive = UTC) shows any moment within ±48 h, else `422`. `names` (repeat it) fetches exactly those satellites and ignores the other filters; the Favourites filter uses it |
@@ -173,14 +174,45 @@ credit: Mike McCants, mmccants.org. Replace the file with a newer copy any time.
 | `QUICKSAT_MAG_PATH` | `backend/resources/quicksat.mag` | McCants' brightness catalogue. Point it at a newer copy, or at a missing file to switch it off |
 | `SATCAT_URL` | CelesTrak active SATCAT (CSV) | Source of object sizes for size-based brightness; empty switches it off |
 | `SATCAT_TTL_SECONDS` | `604800` | How long the downloaded SATCAT is reused (one week) |
+| `PUSH_ENABLED` | `1` | Background pass alerts (Web Push) |
+| `PUSH_DB_PATH` | `backend/data/push.db` | Where push subscriptions are stored |
+| `VAPID_KEY_PATH` / `VAPID_PRIVATE_KEY` | `backend/data/vapid_private.pem` | The server's push identity (file, or the PEM text) |
+| `VAPID_SUBJECT` | `mailto:admin@example.com` | Contact given to push services |
+| `PUSH_CHECK_SECONDS` | `60` | How often the alert thread looks for due passes |
 | `NAKED_EYE_LIMIT_MAG` | `4.5` | Faintest magnitude treated as visible (~5.5 dark site, ~4 in a suburb) |
 
 ## Pass alerts
 
-The sky panel has an **Add passes to my calendar** link (the `.ics` above) and a per-pass **Remind me**
-button. The button uses browser notifications, so it only fires while the page stays open; use the
-calendar file for reminders that work when the app is closed. True background push alerts would need
-a server-side subscription store and are not built yet.
+Two ways to be told about a pass:
+
+- **Background alerts (Web Push).** Tick **Alert me before passes** in the Layers panel (it needs your
+  location). The browser asks for notification permission and the server then sends a push
+  notification `5 / 10 / 20 / 30` minutes before a pass becomes visible, **even when the app is
+  closed**. By default only passes you could actually see are announced ("Only passes I can see");
+  tapping the notification opens the satellite. "Send a test alert" checks the whole chain.
+- **Calendar file / Remind me.** The sky panel's **Add passes to my calendar** link (the `.ics`) works
+  everywhere; the per-pass **Remind me** button only fires while the page stays open.
+
+How it works: the browser registers `frontend/public/sw.js` (a service worker that shows the
+notification) and sends its push subscription, a ~1 km-rounded location and your choices to
+`POST /push/subscribe`. A server thread (`backend/services/alerts.py`) wakes every minute, works out
+the upcoming passes of the watchlist satellites for each place (shared by everyone within ~1 km,
+refreshed every 10 minutes), and sends each subscriber each pass once. Messages are encrypted and
+signed with the server's VAPID key (`pywebpush`). Subscriptions live in a small SQLite file
+(`backend/data/push.db`); a subscription whose browser has unsubscribed is deleted automatically.
+
+Things to know when you deploy:
+
+- Browsers only allow push on **https** pages (`localhost` counts). On an iPhone the site must be
+  added to the Home Screen first.
+- The server creates `backend/data/vapid_private.pem` on first start. **Keep it**: new keys make
+  every existing subscription stop working. On hosts without a persistent disk, put the PEM text in
+  `VAPID_PRIVATE_KEY` instead, and mount a persistent path for `PUSH_DB_PATH`.
+- Set `VAPID_SUBJECT` to a contact such as `mailto:you@example.com`; push services use it.
+- Only the watchlist satellites (`PASS_WATCHLIST`) are alerted about, not the whole catalogue.
+- Alerts use your stored location (rounded to ~1 km) and nothing else; **Alert me** off deletes it.
+- `PUSH_ENABLED=0` (or not installing `pywebpush`) turns the feature off; the checkbox then explains
+  that alerts aren't available on this server.
 
 ## Sky view on your phone
 
@@ -208,5 +240,5 @@ camera image.
 ## Roadmap
 
 - Marker clustering was skipped on purpose (it fights moving satellites; a canvas layer is used instead)
-- Day/night shading and footprints on the 3D globe; pass alerts
+- Day/night shading and footprints on the 3D globe; background pass alerts (done)
 - Real per-satellite brightness (e.g. Starlink generations, tumbling rocket bodies) beyond the size-based estimate

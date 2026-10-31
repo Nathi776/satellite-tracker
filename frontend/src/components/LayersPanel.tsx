@@ -2,6 +2,7 @@ import type { GroupInfo } from "../api";
 import type { OverlayId } from "../hooks/useOverlays";
 import { groupColor } from "../utils/groups";
 import { MAP_STYLES, type MapStyleId } from "../utils/mapStyles";
+import PushAlerts from "./PushAlerts";
 import "./layers-panel.css";
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
   nakedEyeOnly: boolean;
   onNakedEyeOnlyChange: (v: boolean) => void;
   hasLocation: boolean;
+  location?: { lat: number; lon: number } | null;
   aboveCount: number | null;
   /** "sheet" is the phone version: map style and limit inside, no shortcut hints */
   variant?: "panel" | "sheet";
@@ -47,6 +49,7 @@ export default function LayersPanel({
   nakedEyeOnly,
   onNakedEyeOnlyChange,
   hasLocation,
+  location = null,
   aboveCount,
   variant = "panel",
   mapStyleId,
@@ -140,6 +143,9 @@ export default function LayersPanel({
         />
         <span className="layers__label">Only those visible by eye</span>
       </label>
+
+      <div className="layers__group">Alerts</div>
+      <PushAlerts location={location} />
 
       {sheet && limit !== undefined && limits && onLimitChange && (
         <label className="layers__row layers__limit">

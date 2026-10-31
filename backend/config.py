@@ -47,6 +47,21 @@ SATCAT_URL = os.getenv(
 SATCAT_TTL_SECONDS = int(os.getenv("SATCAT_TTL_SECONDS", str(7 * 24 * 3600)))
 SATCAT_CACHE_PATH = Path(os.getenv("SATCAT_CACHE_PATH", BASE_DIR / "data" / "satcat_cache.json"))
 
+# --- Pass alerts (Web Push) --------------------------------------------------
+# Browsers that subscribe get a push notification shortly before a pass, even with the app closed
+# (see backend/services/alerts.py). Subscriptions (with a ~1 km-rounded location) are stored in
+# a small SQLite file. Needs the `pywebpush` package; without it the feature simply stays off.
+PUSH_ENABLED = os.getenv("PUSH_ENABLED", "1") not in ("0", "false", "False", "")
+PUSH_DB_PATH = Path(os.getenv("PUSH_DB_PATH", BASE_DIR / "data" / "push.db"))
+# The server's VAPID identity. Created on first start; keep the file, because new keys make
+# every existing subscription stop working. Or set VAPID_PRIVATE_KEY to the PEM text itself.
+VAPID_KEY_PATH = Path(os.getenv("VAPID_KEY_PATH", BASE_DIR / "data" / "vapid_private.pem"))
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "")
+# Push services want a contact for whoever runs the server, e.g. "mailto:you@example.com".
+VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:admin@example.com")
+PUSH_CHECK_SECONDS = int(os.getenv("PUSH_CHECK_SECONDS", "60"))
+PUSH_MAX_SUBSCRIPTIONS = int(os.getenv("PUSH_MAX_SUBSCRIPTIONS", "5000"))
+
 # --- Satellite groups -------------------------------------------------------
 # Extra "Africa" name prefixes as (prefix, country) pairs, on top of the table in
 # backend/services/africa.py. The TLE data has no operator field, so this is name matching.
