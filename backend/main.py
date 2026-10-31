@@ -12,7 +12,8 @@ from backend.ratelimit import RateLimitMiddleware
 from backend.satellites.african import AFRICAN_SATELLITES
 from backend.services import africa
 from backend.services import satellites as catalog
-from backend.services import refresher, tle_service
+from backend import push_routes
+from backend.services import alerts, refresher, tle_service
 from backend.services.magnetic import declination_deg
 from backend.services.ics import passes_to_ics
 from backend.services.groundtrack import get_ground_track
@@ -37,11 +38,14 @@ async def lifespan(app: FastAPI):
     # side, so no request has to wait for either. REFRESH_IN_BACKGROUND=0 turns it off.
     if config.REFRESH_IN_BACKGROUND:
         refresher.start()
+    alerts.start()
     yield
+    alerts.stop()
     refresher.stop()
 
 
 app = FastAPI(title="African Satellite Tracker", lifespan=lifespan)
+app.include_router(push_routes.router)
 
 # Added before CORS so that CORS wraps it: a 429 still carries the CORS headers the browser needs.
 app.add_middleware(RateLimitMiddleware)

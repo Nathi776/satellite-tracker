@@ -673,6 +673,7 @@ export default function SatelliteMap() {
                   nakedEyeOnly={nakedEyeOnly}
                   onNakedEyeOnlyChange={setNakedEyeOnly}
                   hasLocation={!!location}
+                  location={location}
                   aboveCount={visibility.data ? liveSats.length : null}
                 />}
                 {timeBlock}
@@ -761,6 +762,7 @@ export default function SatelliteMap() {
             nakedEyeOnly={nakedEyeOnly}
             onNakedEyeOnlyChange={setNakedEyeOnly}
             hasLocation={!!location}
+            location={location}
             aboveCount={visibility.data ? liveSats.length : null}
             mapStyleId={mapStyleId}
             onMapStyleChange={changeMapStyle}

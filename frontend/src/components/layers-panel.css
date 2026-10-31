@@ -234,3 +234,40 @@
   font-size: 14px;
   cursor: pointer;
 }
+
+/* pass alerts */
+.alerts__note {
+  margin: 2px 0 6px 24px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #a9b8dc;
+}
+
+.alerts__note--error {
+  color: #fca5a5;
+}
+
+.alerts__opts {
+  margin-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.alerts__opts select {
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #25304a;
+  background: #0f172a;
+  color: #e8ecf4;
+  font: inherit;
+}
+
+.alerts__opts .layers__link {
+  align-self: flex-start;
+}
+
+.layers--sheet .alerts__opts select {
+  min-height: 40px;
+}
