@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import "./bottom-sheet.css";
 
 export type Snap = "peek" | "half" | "full";
@@ -77,6 +77,14 @@ export default function BottomSheet({ snap, onSnapChange, summary, children }: P
     e.currentTarget.releasePointerCapture?.(e.pointerId);
   };
 
+  // open sheets let the header shrink to its content (no dead gap above the tabs)
+  const grabRef = useRef<HTMLDivElement>(null);
+  const [grabH, setGrabH] = useState(PEEK_PX);
+  useLayoutEffect(() => {
+    const h = grabRef.current?.offsetHeight;
+    if (h && h !== grabH) setGrabH(h);
+  });
+
   return (
     <section
       ref={ref}
@@ -85,6 +93,7 @@ export default function BottomSheet({ snap, onSnapChange, summary, children }: P
       aria-label="Satellite and sky details"
     >
       <div
+        ref={grabRef}
         className="sheet__grab"
         role="button"
         tabIndex={0}
@@ -104,7 +113,7 @@ export default function BottomSheet({ snap, onSnapChange, summary, children }: P
         <span className="sheet__handle" />
         <div className="sheet__summary">{summary}</div>
       </div>
-      <div className="sheet__body" style={{ maxHeight: Math.max(0, visible - PEEK_PX) }}>
+      <div className="sheet__body" style={{ maxHeight: Math.max(0, visible - (snap === "peek" ? PEEK_PX : grabH)) }}>
         {children}
       </div>
     </section>
