@@ -724,6 +724,12 @@
 
   .leaflet-control-attribution {
     font-size: 9px;
+    line-height: 1.2;
+    padding: 0 4px;
+    max-width: 70vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .sky-panel,

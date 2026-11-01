@@ -66,6 +66,12 @@
   visibility: hidden;
 }
 
+/* open: header hugs its content */
+.sheet:not(.sheet--peek) .sheet__grab {
+  min-height: 0;
+  padding-bottom: 6px;
+}
+
 /* the existing cards lose their own floating-card look inside the sheet */
 .sheet .sky-panel,
 .sheet .sky-hint,
