@@ -218,7 +218,7 @@
 }
 
 /* Phones: dock the panel to the bottom of the screen instead of floating over the map */
-@media (max-width: 720px) {
+@media (max-width: 720px), (max-height: 500px) {
   .sky-panel,
   .sky-hint {
     left: 8px;

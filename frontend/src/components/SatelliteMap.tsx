@@ -18,6 +18,7 @@ import "./globe-view.css";
 // three.js is large: it is only downloaded when someone opens the globe
 const GlobeView = lazy(() => import("./GlobeView"));
 import MapCursor from "./MapCursor";
+import ViewSwitch from "./ViewSwitch";
 import BottomSheet, { type Snap } from "./BottomSheet";
 import SkyLabels from "./SkyLabels";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -169,9 +170,9 @@ export default function SatelliteMap() {
   const [sheetSnap, setSheetSnap] = useState<Snap>("peek");
   const [sheetTab, setSheetTab] = useState<"sat" | "sky">("sat");
   // desktop layout: layers on the left, detail card on the right, status bar under the map
-  const wide = useMediaQuery("(min-width: 721px)");
+  const wide = useMediaQuery("(min-width: 721px) and (min-height: 501px)");
   // room for the layers panel beside the map; narrower windows use the Layers sheet
-  const dock = useMediaQuery("(min-width: 1000px)");
+  const dock = useMediaQuery("(min-width: 1000px) and (min-height: 501px)");
   const [mapStyleId, setMapStyleId] = useState<MapStyleId>(loadMapStyle);
   const mapStyle = MAP_STYLES.find(m => m.id === mapStyleId) ?? MAP_STYLES[0];
   const changeMapStyle = useCallback((id: MapStyleId) => {
@@ -376,19 +377,22 @@ export default function SatelliteMap() {
       ? `Showing ${livePositions.length.toLocaleString()} of ${groupTotal.toLocaleString()}`
       : `${livePositions.length.toLocaleString()} shown`;
 
+  const layersButton = (
+    <button type="button" className="layers-btn" onClick={() => setLayersOpen(true)} aria-label="Layers">
+      <span aria-hidden="true">◫</span> <span className="layers-btn__text">Layers</span>
+      {picked.length > 0 && (
+        <small>
+          {wide
+            ? `· ${chipGroups.find(g => g.id === picked[0])?.label ?? picked[0]}${picked.length > 1 ? ` +${picked.length - 1}` : ""}`
+            : `· ${picked.length}`}
+        </small>
+      )}
+    </button>
+  );
+
   const headerControls = (
         <div className="app-header__row">
-          {!dock && (
-            <button type="button" className="layers-btn" onClick={() => setLayersOpen(true)}>
-              <span aria-hidden="true">◫</span> Layers
-              {picked.length > 0 && (
-                <small>
-                  · {chipGroups.find(g => g.id === picked[0])?.label ?? picked[0]}
-                  {picked.length > 1 ? ` +${picked.length - 1}` : ""}
-                </small>
-              )}
-            </button>
-          )}
+          {wide && !dock && layersButton}
           <span className="shown-note shown-note--count" aria-live="polite">
             {shownNote}
           </span>
@@ -453,15 +457,18 @@ export default function SatelliteMap() {
 
           {wide && headerControls}
 
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={requestLocation}
-            aria-label={location ? "Update my location" : "Use my location"}
-          >
-            <span aria-hidden="true">📍</span>
-            <span className="btn-label">{location ? "Update My Location" : "Use My Location"}</span>
-          </button>
+          <div className="header-actions">
+            {!wide && layersButton}
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={requestLocation}
+              aria-label={location ? "Update my location" : "Use my location"}
+            >
+              <span aria-hidden="true">📍</span>
+              <span className="btn-label">{location ? "Update My Location" : "Use My Location"}</span>
+            </button>
+          </div>
         </div>
 
         {!wide && headerControls}
@@ -584,13 +591,7 @@ export default function SatelliteMap() {
           </Suspense>
         )}
 
-        <div className="view-switch" role="group" aria-label="View">
-          {(["map", "globe"] as const).map(v => (
-            <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}>
-              {v === "map" ? "Map" : "3D globe"}
-            </button>
-          ))}
-        </div>
+        {wide && <ViewSwitch view={view} onChange={setView} />}
 
         {view === "map" && <MapStyleSwitch value={mapStyleId} onChange={changeMapStyle} />}
 
@@ -766,6 +767,11 @@ export default function SatelliteMap() {
             aboveCount={visibility.data ? liveSats.length : null}
             mapStyleId={mapStyleId}
             onMapStyleChange={changeMapStyle}
+            view={view}
+            onViewChange={v => {
+              setView(v);
+              setLayersOpen(false);
+            }}
             limit={limit}
             limits={LIMITS}
             onLimitChange={setLimit}

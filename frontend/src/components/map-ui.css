@@ -261,7 +261,7 @@
 }
 
 /* ---- phones: overlays sit at the top (the sky panel docks to the bottom) ---- */
-@media (max-width: 720px) {
+@media (max-width: 720px), (max-height: 500px) {
   .left-stack {
     top: 8px;
     bottom: auto;
@@ -526,7 +526,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 720px), (max-height: 500px) {
   .clock__date {
     display: none;
   }
@@ -552,7 +552,7 @@
   display: none;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 720px), (max-height: 500px) {
   /* header: brand + clock / search + location / chips */
   .app-header {
     padding: 6px 10px 6px;
@@ -591,12 +591,42 @@
     padding: 0 10px;
   }
 
-  .btn-primary {
+  .header-actions {
     grid-column: 2;
     grid-row: 2;
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-primary {
+    min-width: 48px;
+    min-height: 44px;
     padding: 8px 12px;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1;
+  }
+
+  .searchbox input[type="search"] {
+    min-height: 44px;
+  }
+
+  .layers-btn {
+    min-height: 44px;
+  }
+
+  .layers-btn__text {
+    display: none;
+  }
+
+  /* time travel pill: bigger things to tap */
+  .timebar__live {
+    min-height: 36px;
+    padding: 0 12px;
+  }
+
+  .timebar__toggle {
+    min-width: 36px;
+    min-height: 36px;
   }
 
   .btn-label {
@@ -827,7 +857,7 @@
 }
 
 /* phone: the style switch and the limit live in the Layers sheet */
-@media (max-width: 720px) {
+@media (max-width: 720px), (max-height: 500px) {
   .map-style,
   .shown-note--limit {
     display: none;
@@ -835,5 +865,36 @@
 
   .app-header__row .layers-btn {
     flex: none;
+  }
+}
+
+/* wide screens: the buttons are just more items of the header row */
+@media (min-width: 721px) and (min-height: 501px) {
+  .header-actions {
+    display: contents;
+  }
+}
+
+/* phone held sideways: one header row, so the map keeps as much height as possible */
+@media (max-height: 500px) and (min-width: 721px) {
+  .app-header__top {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .brand,
+  .searchbox,
+  .header-actions {
+    grid-row: 1;
+  }
+  .brand {
+    grid-column: 1;
+  }
+  .clock {
+    display: none;
+  }
+  .searchbox {
+    grid-column: 2;
+  }
+  .header-actions {
+    grid-column: 3;
   }
 }
