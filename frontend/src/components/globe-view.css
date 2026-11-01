@@ -49,17 +49,6 @@
   font-weight: 600;
 }
 
-@media (max-width: 720px) {
-  .view-switch {
-    left: 8px;
-    top: 8px;
-    transform: none;
-  }
-  .view-switch button {
-    min-height: 36px;
-  }
-}
-
 /* the flat map stays mounted (it keeps its zoom and position) but is hidden behind the globe */
 .map-area--globe .leaflet-container {
   visibility: hidden;

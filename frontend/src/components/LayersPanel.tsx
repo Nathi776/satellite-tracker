@@ -3,6 +3,7 @@ import type { OverlayId } from "../hooks/useOverlays";
 import { groupColor } from "../utils/groups";
 import { MAP_STYLES, type MapStyleId } from "../utils/mapStyles";
 import PushAlerts from "./PushAlerts";
+import ViewSwitch, { type MapView } from "./ViewSwitch";
 import "./layers-panel.css";
 
 type Props = {
@@ -22,6 +23,8 @@ type Props = {
   /** "sheet" is the phone version: map style and limit inside, no shortcut hints */
   variant?: "panel" | "sheet";
   mapStyleId?: MapStyleId;
+  view?: MapView;
+  onViewChange?: (v: MapView) => void;
   onMapStyleChange?: (id: MapStyleId) => void;
   limit?: number;
   limits?: number[];
@@ -54,6 +57,8 @@ export default function LayersPanel({
   variant = "panel",
   mapStyleId,
   onMapStyleChange,
+  view,
+  onViewChange,
   limit,
   limits,
   onLimitChange,
@@ -78,7 +83,11 @@ export default function LayersPanel({
         </span>
       </div>
 
-      {sheet && mapStyleId && onMapStyleChange && (
+      {sheet && view && onViewChange && (
+        <ViewSwitch view={view} onChange={onViewChange} className="layers__seg layers__seg--view" />
+      )}
+
+      {sheet && mapStyleId && onMapStyleChange && view !== "globe" && (
         <div className="layers__seg" role="group" aria-label="Map style">
           {MAP_STYLES.map(m => (
             <button

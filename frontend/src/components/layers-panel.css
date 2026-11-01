@@ -156,6 +156,12 @@
 }
 
 .layers--sheet .layers__head {
+  position: sticky;
+  top: -14px;
+  z-index: 1;
+  margin: -14px -16px 0;
+  padding: 14px 16px 0;
+  background: #0b1120;
   font-size: 18px;
 }
 
