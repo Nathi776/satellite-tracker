@@ -1,3 +1,7 @@
+<img width="1241" height="489" alt="image" src="https://github.com/user-attachments/assets/e8b7b502-788d-43d1-9d2f-63f7fa73e6af" />
+
+
+
 # 🛰 African Satellite Tracker
 
 Live satellite tracking with a focus on Africa: see where satellites are right now,
